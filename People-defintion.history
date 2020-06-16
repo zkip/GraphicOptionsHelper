@@ -1,0 +1,15 @@
+[0]
++ name string, setName(string), getName() string
+
+[1]
+- name
++ age uint
+
+[2]
+- name, age
+
+[3]
++ name string, age uint
+
+[4]
+* name Name

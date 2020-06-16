@@ -1,0 +1,46 @@
+let state = {
+	items: [],
+}
+
+fn fetchItems() { ... }
+
+type App{
+
+	frag {
+		Header
+		
+	}
+}
+
+type Header {
+
+	frag {
+		wrapper: div {
+			logo: Logo
+			menu: Menu items = 
+		}
+	}
+}
+
+type Menu {
+	items	[]string
+	current	uint
+
+	frag {
+		ul {
+			@if items.length > 3 {
+				@for items as item, idx {
+					li	(
+						tag = idx == current ? "current" : ""
+						) {
+						span .label item
+					}
+				}
+			} else {
+				span "..."
+			}
+		}
+	}
+}
+
+type Body { }
