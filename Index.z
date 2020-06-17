@@ -4,6 +4,12 @@ let state = {
 
 fn fetchItems() { ... }
 
+const state = {
+	user: {
+		token: ""
+	}
+}
+
 type App{
 
 	frag {
