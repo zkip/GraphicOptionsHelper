@@ -21,6 +21,7 @@ function loadDefintion(name) {
 		const head_dom = document.querySelector("head");
 		const script_dom = document.createElement("script");
 		script_dom.src = `${name}-defintion.js`;
+		// script_dom.type = "module";
 		const errorHandle = () => {
 			head_dom.removeChild(script_dom);
 			removeEventListener("error", errorHandle, true);
@@ -29,7 +30,7 @@ function loadDefintion(name) {
 		if (!M.has(name)) {
 			script_dom.onload = () => {
 				M.set(name, script_dom);
-				console.log(name, " has loaded.");
+				console.log(name, "has loaded.");
 			};
 			head_dom.appendChild(script_dom);
 		} else {

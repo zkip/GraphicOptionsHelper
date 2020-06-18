@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+		<script>
+			addEventListener("load", start);
+
+			async function start() {
+				const stage = document.querySelector(".render");
+				const input = document.querySelector(".input01");
+
+				let active = 2;
+
+				let items = [1, 12, 3, 5];
+				const mapper = (value) => {
+					const count = input.value * 1;
+					const mutation = { value };
+					return mutation;
+				};
+
+				const doms = [];
+
+				function update() {
+					const fragment = new DocumentFragment();
+					items.map((v, idx) => {
+						const rst = mapper(v, idx);
+						const ipt = document.createElement("input");
+						if (rst.tx) {
+							ipt.textContent = rst.tx;
+						}
+						if (rst.value) {
+							ipt.value = rst.value;
+						}
+						fragment.appendChild(ipt);
+					});
+					stage.innerHTML = "";
+					stage.appendChild(fragment);
+				}
+
+				update();
+
+				input.addEventListener("input", (e) => {
+					const count = input.value * 1;
+					// if (count >= 0 && count < items.length) {
+					// 	items[count] = (Math.random() * 100) >> 0;
+					// }
+					items = new Array(count);
+					for (let i = 0; i < count * 1; i++) {
+						items[i] = (Math.random() * 100) >> 0;
+					}
+					update();
+				});
+			}
+		</script>
+		<style>
+			@keyframes appear {
+				0% {
+					background-color: yellowgreen;
+				}
+				100% {
+					background-color: rgba(255, 255, 255, 0);
+				}
+			}
+			input {
+				animation: appear 0.7s;
+				margin: 1em 0;
+				display: block;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="panel">
+			<input type="number" class="input01" />
+		</div>
+		<div class="render"></div>
+	</body>
+</html>

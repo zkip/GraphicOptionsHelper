@@ -23,9 +23,13 @@ define(function Header({ name }) {
 define(function Menu() {
 	let items = []; // []string
 	let current = 0; // uint
-	// const
+	const handle_mousedown = async () => {
+		if (items.length > 0) {
+			// ...
+		}
+	};
 
-	const _fz0g = (ctx) => items.length > 3;
+	const [_fz0g, _fz0g_chached] = chache(() => items.length > 3);
 	const _zf44 = (ctx, fn) =>
 		items.map((item, idx) => fn({ item, idx, ...ctx }));
 	const _fkl0 = (ctx) => {
@@ -35,14 +39,20 @@ define(function Menu() {
 		return { tx: ctx.item };
 	};
 
-	const _fjp4 = () => {};
+	const _fjp4 = (ctx) => ({ tx: "..." });
 
 	return {
-		onDesdroyed: () => {},
+		async onCreate() {
+			items = await fetchSomething("...");
+			addEventListener("mousedown", handle_mousedown);
+		},
+		onDesdroyed() {
+			removeEventListener("mousedown", handle_mousedown);
+		},
 		children: [
 			["ul"],
 			["ul/@if", _fz0g],
-			["ul/@else", _fz0g],
+			["ul/@else", _fz0g_chached],
 			["ul/@if/@for", _zf44],
 			["ul/@else/span", _fjp4],
 			["ul/@if/@for/li", _fkl0],

@@ -49,4 +49,17 @@ type Menu {
 	}
 }
 
+fn Menu() {
+	string[]	items	 
+	uint		current
+	
+	return frag {
+		ul {
+			@if items.length > 3 {
+				
+			}
+		}
+	}
+}
+
 type Body { }
