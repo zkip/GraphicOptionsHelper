@@ -29,11 +29,38 @@ type Header {
 }
 
 type Menu {
-	items	[]string
-	current	uint
+	- items		[]string
+	- current	uint
+	- tips		string
+	
+	- handle_click({ target }) {
+		const root_node = $( #root )[0]
+		current = root_node.getOrder( target )
+	}
+
+	$( #root > li > * ) {
+		style {
+			pointerEvents = "none"
+		}
+	}
 
 	frag {
-		ul {
+		root: ul {
+			div .title toString(current)
+			div .subTitle toString(current) {
+				ul {
+					li "Something 1..."
+					li "Something 2..."
+				}
+				ul {
+					li "Someone..."
+				}
+			}
+
+			@if current == 0 {
+				div .tip tips
+			}
+
 			@if items.length > 3 {
 				@for items as item, idx {
 					li	(
@@ -47,19 +74,23 @@ type Menu {
 			}
 		}
 	}
-}
 
-fn Menu() {
-	string[]	items	 
-	uint		current
-	
-	return frag {
-		ul {
-			@if items.length > 3 {
-				
-			}
+	onMounted( ) {
+		$( #root ) {
+			addEventListener( "click", handle_click )
 		}
 	}
+
+	onDestroyed( ) {
+		$( #root ) {
+			removeEventListener( "click", handle_click )
+		}
+	}
+
+	( ) {
+		items = fetchSomething( "..." )
+	}
+	
 }
 
 type Body { }
