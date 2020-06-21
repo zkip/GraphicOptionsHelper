@@ -71,8 +71,11 @@ define(function Menu() {
 	const childrenWeights = {};
 
 	return {
-		async onCreate() {
-			items = commit(items, await fetchSomething("..."));
+		async onCreated() {
+			// items = commit("items", await fetchSomething("..."));
+			commit({
+				items: async () => (items = await fetchSomething("...")),
+			});
 		},
 		onMounted() {
 			$pick("#root").every((node) => {

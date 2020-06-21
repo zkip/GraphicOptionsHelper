@@ -19,3 +19,23 @@ function render(name, ...props) {
 		});
 	}
 }
+
+function genCommitter(modifiers) {
+	return (variable_name, value) => {
+		const solid_name = parseSolidName(variable_name);
+		if (solid_name in modifiers) {
+			fire(solid_name);
+		}
+		return value;
+	};
+}
+
+function parseSolidName(raw_name) {
+	let solid_name = "";
+
+	const rs = raw_name.split(".");
+	if (rs.length > 0) {
+		solid_name = rs[0];
+	}
+	return solid_name;
+}

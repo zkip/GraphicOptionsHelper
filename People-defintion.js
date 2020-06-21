@@ -9,4 +9,4 @@ define(function People() {
 });
 
 // add page
-defineView("plink/set", () => {});
+// defineView("plink/set", () => {});

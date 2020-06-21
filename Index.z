@@ -10,7 +10,7 @@ const state = {
 	}
 }
 
-type App{
+type App like Element{
 
 	frag {
 		Header
@@ -18,7 +18,7 @@ type App{
 	}
 }
 
-type Header {
+type Header like Element {
 
 	frag {
 		wrapper: div {
@@ -28,7 +28,7 @@ type Header {
 	}
 }
 
-type Menu {
+type Menu like Element {
 	- items		[]string
 	- current	uint
 	- tips		string
@@ -71,6 +71,14 @@ type Menu {
 				}
 			} else {
 				span "..."
+			}
+
+			@{
+				i := Math.random()
+			}
+
+			@if i > 0.2 {
+				span toString(i)
 			}
 		}
 	}
