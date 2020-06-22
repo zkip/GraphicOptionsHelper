@@ -4,3 +4,14 @@ function cache(fn) {
 }
 
 function noop() {}
+
+function isNotEmpty(v) {
+	return typeof v !== "undefined";
+}
+
+function first(v) {
+	return v[0];
+}
+function last(v) {
+	return v[v.length - 1];
+}

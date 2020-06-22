@@ -67,6 +67,7 @@ async function start() {
 }
 
 function app() {
-	const people = instancing("People");
-	console.log(people);
+	const nameInput_dom = document.querySelector(".name");
+	const ins = makeInstance(nameInput_dom.value);
+	console.log(ins);
 }
