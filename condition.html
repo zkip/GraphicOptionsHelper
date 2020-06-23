@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+		<style>
+			body .container > * {
+				border: 1px solid red;
+				margin-top: 1.2rem;
+			}
+		</style>
+		<script>
+			addEventListener("load", start);
+			function start() {
+				const container = document.querySelector(".container");
+				const toggleBtn = document.querySelector(".toggle");
+
+				let dom = document.createElement("div");
+				container.appendChild(dom);
+
+				function element({ tx, tags }) {
+					if (condition()) {
+						let _dom = document.createElement("div");
+						_dom.textContent = tx;
+						_dom.classList.add(Object.keys(tags));
+						dom.replaceWith(_dom);
+						dom = _dom;
+					} else {
+						// dom.outerHTML = "<!-- -->";
+						const comment = document.createComment("");
+						dom.replaceWith(comment);
+						dom = comment;
+					}
+				}
+
+				let isShow = true;
+
+				function condition() {
+					return isShow;
+				}
+
+				function update() {
+					element({ tx: "x", tags: { ifBlock: true } });
+				}
+
+				update();
+
+				toggleBtn.addEventListener("click", (e) => {
+					isShow = !isShow;
+					update();
+				});
+			}
+		</script>
+	</head>
+	<body>
+		<button class="toggle">toggle</button>
+		<div class="container">
+			<div>123</div>
+			<!-- <div>45</div> -->
+		</div>
+	</body>
+</html>

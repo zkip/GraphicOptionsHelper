@@ -63,6 +63,7 @@ type Menu like Element {
 
 			@if items.length > 3 {
 				@for items as item, idx {
+					div '---'
 					li	(
 						tag = idx == current ? "current" : ""
 						) {
@@ -79,6 +80,18 @@ type Menu like Element {
 
 			@if i > 0.2 {
 				span toString(i)
+			}
+
+			@if current > 3 {
+				span "C"
+			} else current > 2 {
+				span "B"
+			} else current > 1 {
+				span "A"
+			} else current > 0 {
+				span "S"
+			} else {
+				span "???"
 			}
 		}
 	}

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+		<script src="utils.js"></script>
+		<script>
+			function genContextor() {
+				const store = {};
+
+				const access = (scope, key) => {
+					const m = fallback({})(store[scope]);
+					store[scope] = m;
+					const value = m[key];
+					if (isEmpty(value)) {
+						if (isEmptyString(scope)) {
+							return undefined;
+						} else {
+							const scp = scope.split("/");
+							scp.splice(-1);
+
+							return access(scp.join("/"), key);
+						}
+					} else {
+						return value;
+					}
+				};
+
+				const set = (scope, context) => {
+					const m = fallback({})(store[scope]);
+					store[scope] = m;
+
+					assign(m, context);
+				};
+				const get = access;
+
+				const withBy = (scope) => ({
+					set: (context) => set(scope, context),
+					get: (key) => get(scope, key),
+				});
+
+				return assign([get, set], { set, get, withBy });
+			}
+
+			const contextor = genContextor();
+			contextor.set("a/b/c", { name: "Jackie" });
+			contextor.set("a/b/c/d", { name: "Tom" });
+			console.log(contextor.get("a/b/c/d/e", "name"));
+		</script>
+	</head>
+	<body></body>
+</html>
