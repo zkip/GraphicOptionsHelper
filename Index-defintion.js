@@ -4,21 +4,28 @@
 // 	};
 // });
 
-// define(function Header({ name }) {
-// 	const children = [
-// 		{ path: "./wrapper", type: "HTMLElement.Div" },
-// 		{ path: "./wrapper/logo", type: "Logo" },
-// 		{ path: "./wrapper/menu", type: "Menu" },
-// 	];
-// 	const modifiers = {
-// 		"./wrapper/menu": "",
-// 	};
-// 	return {
-// 		textContext: "",
-// 		children,
-// 		modifiers,
-// 	};
-// });
+define(function Iteration({ name }) {
+	const items = [1, 2, 3];
+	const _sdff = ({ set, get }) => ({
+		$iteration: (fn) => {
+			return items.map((item, idx) => fn(set({ item, idx })));
+		},
+	});
+	const children = {
+		div: [() => ({ name: "root" })],
+		"div/@for": [_sdff],
+		"div/@for/span": [
+			({ get }) => {
+				return { tx: "xxx" + get("item") };
+			},
+		],
+	};
+	const modifiers = {};
+	return {
+		children,
+		modifiers,
+	};
+});
 
 define(function Index() {
 	const modifiers = {
@@ -41,9 +48,8 @@ define(function Index() {
 	const [_fz0g, _fz0g_cached] = cache(() => items.length > 3);
 	const _fsdi = () => ({ $condition: _fz0g });
 	const _uur3 = () => ({ $condition: not(_fz0g_cached) });
-	const _zf44 = (ctx) => ({
-		$iteration: ({ set }) =>
-			items.map((item, idx) => fn(set({ item, idx, ...ctx }))),
+	const _zf44 = ({ set }) => ({
+		$iteration: (fn) => items.map((item, idx) => fn(set({ item, idx }))),
 	});
 	const _fkl0 = ({ get }) => ({ tags: { current: current === get("idx") } });
 	const _xx89 = ({ get }) => ({ tx: get("item") });
@@ -59,7 +65,7 @@ define(function Index() {
 	const _ffxd = (ctx) => ({ tx: "---" });
 
 	const children = {
-		ul: [noop, { name: "root" }],
+		ul: [() => ({ name: "root" })],
 		"ul/div$0": [_fk91],
 		"ul/div$1": [_z11i],
 		"ul/div$1/ul$0": [noop],

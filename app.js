@@ -30,6 +30,7 @@ function loadDefintion(name) {
 		if (!M.has(name)) {
 			script_dom.onload = () => {
 				M.set(name, script_dom);
+				rv();
 				console.log(name, "has loaded.");
 			};
 			head_dom.appendChild(script_dom);
@@ -53,6 +54,8 @@ async function start() {
 		".removeDefintionBtn"
 	);
 
+	const container = document.querySelector(".container");
+
 	buttom_dom.addEventListener("click", async () => {
 		await loadDefintion(nameInput_dom.value);
 	});
@@ -64,6 +67,11 @@ async function start() {
 	executeBtn_dom.addEventListener("click", () => {
 		app();
 	});
+
+	await loadDefintion("Index");
+	const ins = makeInstance("Iteration");
+
+	container.appendChild(ins.root);
 }
 
 function app() {

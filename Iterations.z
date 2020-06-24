@@ -1,0 +1,33 @@
+type {
+	frag {
+		div .container {
+			@for let i=0; i<2; i++ {
+				@for let j=0; j<3; j++ {
+					@for let k=0; k<4; k++ {
+						span joinToString( i, j, k )
+						div "DS"
+					}
+				}
+			}
+		}
+	}
+}
+
+type another {
+	items []string
+
+	frag {
+		div.container {
+			@for items as item, i {
+				@for let j=0; j<2; j++ {
+
+					@ i % 2 == 1 ? j += i : 0
+
+					@for let k=0; k<3; k++ {
+						span joinToString( item, j, k )
+					}
+				}
+			}
+		}
+	}
+}
