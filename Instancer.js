@@ -18,12 +18,36 @@ function makeInstance(name, { ...props } = {}) {
 
 		const { modifiers, children: mutation_map } = tail;
 
+		let isInDynamicContext = false;
+
 		function getLogicalPosition(solid_path) {
 			return logical_position_map[solid_path];
 		}
 
 		function getLogicalCount(parent_solid_path) {
 			return logical_count_map[parent_solid_path];
+		}
+
+		function resolveToPure(solid_name, option, exsitNode) {
+			const isCondition =
+				context_type === "@if" ||
+				context_type === "@else" ||
+				context_type === "@case";
+
+			if (isCondition()) {
+				const condition = getCondition();
+				const node = condition()
+					? genNode(solid_name, option)
+					: genNode("&Comment");
+
+				if (isNotEmpty(exsitNode)) {
+					exsitNode.replaceWith(node);
+				} else {
+					return node;
+				}
+			} else if (context_type === "@") {
+			} else if (context_type === "@for") {
+			}
 		}
 
 		function applyToDOM(mutated_solids = Object.keys(mutation_map)) {
@@ -60,26 +84,32 @@ function makeInstance(name, { ...props } = {}) {
 						...option
 					} = mutation_action(contextor.withBy(solid_path));
 
-					setContext($context, solid_path);
+					setContext(solid_path, $context);
 
 					if (self_solid === "@for") {
-						iteration_map[solid_path] = $iteration;
 						node_map[solid_path] = parent_node;
+
+						if (parent_solid === "@for") {
+						} else {
+							iteration_map[solid_path] = genIterations(
+								$iteration
+							);
+						}
 					} else if (self_solid === "@if") {
 						condition_map[solid_path] = $condition;
 					}
+
+					isInDynamicContext = true;
 				} else {
+					if (isInDynamicContext) {
+						resolveToPure();
+					}
+
 					if (isLogicalSolid(parent_solid, "@for")) {
 						const iterator = getIteration(parent_solid_path);
 						const options = iterator(mutation_action);
 						const lp = getLogicalPosition(solid_path);
 						const lc = getLogicalCount(parent_solid_path);
-						// console.log(
-						// 	iterator,
-						// 	mutation_action,
-						// 	options,
-						// 	"*************"
-						// );
 
 						options.map((option, idx) => {
 							const node = genNode(self_solid, option);
@@ -124,8 +154,16 @@ function mount(parent, child) {
 	parent.appendChild(child);
 }
 
+function resolveSpecialSolid(solid_name, { tx = "" } = {}) {
+	if (isSpecialSolid(solid_name, "&Comment")) {
+		return document.createComment(tx);
+	}
+}
+
 function genNode(solid_name, option = {}) {
-	if (isLogicalSolid(solid_name)) {
+	if (isSpecialSolid(solid_name)) {
+		return resolveSpecialSolid(solid_name);
+	} else if (isLogicalSolid(solid_name)) {
 		const root = document.createDocumentFragment();
 		mapToNode(root, option);
 		return { root };
@@ -155,79 +193,6 @@ function mapToNode(node, { tx }) {
 	}
 }
 
-function genContextor() {
-	const store = {};
-	console.log(store);
-
-	const result = assign([get, set], { set, get, withBy });
-
-	const access = (scope, key) => {
-		const m = fallback({})(store[scope]);
-		store[scope] = m;
-
-		const value = m[key];
-
-		if (isEmpty(value)) {
-			if (isEmptyString(scope)) {
-				console.error(scope, "-----------");
-				return undefined;
-			} else {
-				const scp = scope.split("/");
-				scp.splice(-1);
-
-				return access(scp.join("/"), key);
-			}
-		} else {
-			return value;
-		}
-	};
-
-	function set(scope, context) {
-		const m = fallback({})(store[scope]);
-		store[scope] = m;
-
-		assign(m, context);
-		return result;
-	}
-
-	function get(...args) {
-		return access(...args);
-	}
-
-	function withBy(scope) {
-		const rst = {
-			set: (context) => (set(scope, context), rst),
-			get: (key) => get(scope, key),
-		};
-		return rst;
-	}
-
-	return result;
-}
-
 function getSolidType(literal) {
 	return first(literal.split("$"));
-}
-
-const INTERNALSOLIDM = {
-	ul: true,
-	li: true,
-	div: true,
-	span: true,
-};
-
-const LOGICALSOLID = {
-	"@": true,
-	"@if": true,
-	"@else": true,
-	"@for": true,
-};
-
-function isInternalSolid(solid_name) {
-	return solid_name in INTERNALSOLIDM;
-}
-
-// which: anyone / if / else / for
-function isLogicalSolid(solid_name, which = solid_name) {
-	return solid_name in LOGICALSOLID && which === solid_name;
 }

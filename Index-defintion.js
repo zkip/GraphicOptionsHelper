@@ -7,9 +7,7 @@
 define(function Iteration({ name }) {
 	const items = [1, 2, 3];
 	const _sdff = ({ set, get }) => ({
-		$iteration: (fn) => {
-			return items.map((item, idx) => fn(set({ item, idx })));
-		},
+		$iteration: ["items", () => {}],
 	});
 	const children = {
 		div: [() => ({ name: "root" })],
@@ -49,7 +47,7 @@ define(function Index() {
 	const _fsdi = () => ({ $condition: _fz0g });
 	const _uur3 = () => ({ $condition: not(_fz0g_cached) });
 	const _zf44 = ({ set }) => ({
-		$iteration: (fn) => items.map((item, idx) => fn(set({ item, idx }))),
+		$iteration: { items: (item, idx) => fn(set({ item, idx })) },
 	});
 	const _fkl0 = ({ get }) => ({ tags: { current: current === get("idx") } });
 	const _xx89 = ({ get }) => ({ tx: get("item") });

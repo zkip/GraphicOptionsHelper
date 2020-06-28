@@ -6,17 +6,59 @@
 		<title>Document</title>
 		<script src="utils.js"></script>
 		<script>
-			const items = ["a", "b", "c"];
-			const iteration1 = (fn) =>
-				items.map((item, idx) => fn({ item, idx }));
-			const iteration2 = (fn) =>
-				items.map((item, idx) => fn({ item, idx }));
+			// let items = ["a", "b", "c", "d"];
+			// let items2 = ["1", "2", "3", "4"];
+			// const collections = [
+			// 	() => {
+			// 		let i = 0;
+			// 		let item = items[i];
+			// 		return {
+			// 			cond: () => i < items.length,
+			// 			locals: () => [item, i],
+			// 			defer: () => {
+			// 				i++;
+			// 				item = items[i];
+			// 			},
+			// 		};
+			// 	},
+			// 	() => {
+			// 		let i = 0;
+			// 		let item = items2[i];
+			// 		return {
+			// 			cond: () => i < items2.length,
+			// 			locals: () => [item, i],
+			// 			defer: () => {
+			// 				i++;
+			// 				item = items2[i];
+			// 			},
+			// 		};
+			// 	},
+			// 	// () => {
+			// 	// 	let i = 0;
+			// 	// 	let item = items[i];
+			// 	// 	return {
+			// 	// 		cond: () => i < items.length,
+			// 	// 		locals: () => [i, item],
+			// 	// 		defer: () => {
+			// 	// 			i++;
+			// 	// 			item = items[i];
+			// 	// 		},
+			// 	// 	};
+			// 	// },
+			// ];
 
-			iteration1(({ item, idx }) =>
-				iteration2(({ item, idx }) => {
-					console.log(item, idx);
-				})
-			);
+			// const iterations = genIterations(...collections);
+
+			// iterations(([item1, idx1], [item2, idx2]) => {
+			// 	console.log(item1, idx1, item2, idx2);
+			// });
+		</script>
+		<script>
+			const str = "jack&fx";
+			const p = 2;
+			console.log(str.slice(p));
+
+			console.log(sliceByAfter("&fx", "&"), sliceBy("&fx", "f"));
 		</script>
 	</head>
 	<body></body>
