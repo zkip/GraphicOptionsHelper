@@ -4,7 +4,11 @@ function makeInstance(name, { ...props } = {}) {
 		// Lifecycle:init
 		const tail = cstor({ ...props });
 
-		const [getContext, setContext] = (contextor = genContextor());
+		const [
+			getContext,
+			setContext,
+			defContext,
+		] = (contextor = genContextor());
 
 		const root = document.createDocumentFragment();
 		const node_mutation_snapshot = {};
@@ -16,7 +20,9 @@ function makeInstance(name, { ...props } = {}) {
 		const logical_count_map = {};
 		const logical_position_map = {};
 
-		const { modifiers, children: mutation_map } = tail;
+		const { modifiers, children: mutation_map, variables } = tail;
+
+		defContext("/", variables);
 
 		let isInDynamicContext = false;
 
@@ -28,7 +34,7 @@ function makeInstance(name, { ...props } = {}) {
 			return logical_count_map[parent_solid_path];
 		}
 
-		function resolveToPure(solid_name, option, exsitNode) {
+		function resolveToPure(solid_name, { self, parent }, option) {
 			const isCondition =
 				context_type === "@if" ||
 				context_type === "@else" ||
@@ -40,8 +46,8 @@ function makeInstance(name, { ...props } = {}) {
 					? genNode(solid_name, option)
 					: genNode("&Comment");
 
-				if (isNotEmpty(exsitNode)) {
-					exsitNode.replaceWith(node);
+				if (isNotEmpty(self)) {
+					self.replaceWith(node);
 				} else {
 					return node;
 				}
@@ -52,7 +58,7 @@ function makeInstance(name, { ...props } = {}) {
 
 		function applyToDOM(mutated_solids = Object.keys(mutation_map)) {
 			for (const solid_path of mutated_solids) {
-				const [mutation_action] = mutation_map[solid_path];
+				const mutation_action = mutation_map[solid_path];
 
 				const nps = solid_path.split("/");
 				const isTopNode = nps.length === 1;
@@ -103,24 +109,32 @@ function makeInstance(name, { ...props } = {}) {
 				} else {
 					if (isInDynamicContext) {
 						resolveToPure();
-					}
-
-					if (isLogicalSolid(parent_solid, "@for")) {
-						const iterator = getIteration(parent_solid_path);
-						const options = iterator(mutation_action);
-						const lp = getLogicalPosition(solid_path);
-						const lc = getLogicalCount(parent_solid_path);
-
-						options.map((option, idx) => {
-							const node = genNode(self_solid, option);
-							// node_map[solid_path] = genNode(self_solid).root;
-							mount(parent_node, node.root, idx * lc + lp);
-						});
 					} else {
-						const node = genNode(self_solid, { props });
+						const option = mutation_action(
+							contextor.withBy(solid_path)
+						);
+						const node = genNode(self_solid, { props, ...option });
+						console.log(node, "@@@@@@");
 						node_map[solid_path] = node.root;
 						mount(parent_node, node.root);
 					}
+
+					// if (isLogicalSolid(parent_solid, "@for")) {
+					// 	const iterator = getIteration(parent_solid_path);
+					// 	const options = iterator(mutation_action);
+					// 	const lp = getLogicalPosition(solid_path);
+					// 	const lc = getLogicalCount(parent_solid_path);
+
+					// 	options.map((option, idx) => {
+					// 		const node = genNode(self_solid, option);
+					// 		// node_map[solid_path] = genNode(self_solid).root;
+					// 		mount(parent_node, node.root, idx * lc + lp);
+					// 	});
+					// } else {
+					// 	const node = genNode(self_solid, { props });
+					// 	node_map[solid_path] = node.root;
+					// 	mount(parent_node, node.root);
+					// }
 				}
 			}
 		}

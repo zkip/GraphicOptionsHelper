@@ -54,11 +54,18 @@
 			// });
 		</script>
 		<script>
-			const str = "jack&fx";
-			const p = 2;
-			console.log(str.slice(p));
+			// const str = "jack&fx";
+			// const p = 2;
+			// console.log(str.slice(p));
 
-			console.log(sliceByAfter("&fx", "&"), sliceBy("&fx", "f"));
+			// console.log(sliceByAfter("&fx", "&"), sliceBy("&fx", "f"));
+		</script>
+		<script>
+			const [get, set, def] = genContextor();
+
+			def("/", { a: "12" });
+
+			console.log(get("/b", "a"));
 		</script>
 	</head>
 	<body></body>

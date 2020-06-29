@@ -1,3 +1,27 @@
+define(function Demo1() {
+	const variables = {
+		items: [],
+		name: "Jassecia",
+		age: 19,
+	};
+
+	const children = {
+		div: noop,
+		"div/ul": () => ({ name: "container", tags: { container: true } }),
+		"div/ul/li": () => ({ tags: { name: true } }),
+		"div/ul/li/label": () => ({ tx: "name" }),
+		"div/ul/li/input": ({ get }) => ({ tx: get("name") }),
+		"div/ul/li$1": () => ({ tags: { age: true } }),
+		"div/ul/li$1/label": () => ({ tx: "age" }),
+		"div/ul/li$1/input": ({ get }) => ({ tx: get("age") }),
+	};
+
+	return {
+		variables,
+		children,
+	};
+});
+
 define(function Ground01() {
 	const variables = {
 		items: [],

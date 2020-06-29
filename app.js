@@ -68,8 +68,8 @@ async function start() {
 		app();
 	});
 
-	await loadDefintion("Index");
-	const ins = makeInstance("Iteration");
+	await loadDefintion("Ground");
+	const ins = makeInstance("Demo1");
 
 	container.appendChild(ins.root);
 }

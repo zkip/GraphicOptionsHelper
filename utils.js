@@ -151,6 +151,8 @@ const INTERNALSOLIDM = {
 	li: true,
 	div: true,
 	span: true,
+	label: true,
+	input: true,
 };
 
 const LOGICALSOLID = {
