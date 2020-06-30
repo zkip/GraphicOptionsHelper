@@ -211,8 +211,6 @@ function makeInstance(name, node_parent_pure, { ...props } = {}) {
 				setContext("/", { [variable_name]: value });
 			});
 
-			console.log(mutated_nodes);
-
 			mutated_nodes.map((solid_path) => {
 				const node = node_map[solid_path];
 				const mutation_action = mutation_map[solid_path];

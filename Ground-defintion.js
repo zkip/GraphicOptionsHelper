@@ -3,18 +3,22 @@ define(function Demo1({ get, set }, refs) {
 		name: ["div/ul/li/label", "div/ul/li/input", "div/ul/li/input$1"],
 		age: ["div/ul/li$1/input", "div/ul/li$1/span"],
 		weight: ["div/ul/li$2/input"],
+		var3: ["div/ul/li$3/input"],
 	};
 
 	const mutations_effects = {
-		age: ["weight"],
+		age: ["weight", "var3"],
+		weight: ["var3"],
 	};
 
 	const mutations_deps = {
 		weight: ["age"],
+		var3: ["age", "weight"],
 	};
 
 	const deps = {
 		weight: (v) => v * 8.7,
+		var3: (v1, v2) => (v1 > 2 ? v1 : v1 + v2),
 	};
 
 	const variables = {
@@ -24,6 +28,7 @@ define(function Demo1({ get, set }, refs) {
 
 		// cached
 		weight: 0,
+		var3: 0,
 	};
 
 	const children = {
@@ -46,6 +51,9 @@ define(function Demo1({ get, set }, refs) {
 		"div/ul/li$2": () => ({ tags: { weight: true } }),
 		"div/ul/li$2/label": ({ get }) => ({ tx: "weight" }),
 		"div/ul/li$2/input": ({ get }) => ({ value: get("weight") }),
+		"div/ul/li$3": () => ({ tags: { var3: true } }),
+		"div/ul/li$3/label": ({ get }) => ({ tx: "var3" }),
+		"div/ul/li$3/input": ({ get }) => ({ value: get("var3") }),
 	};
 
 	const [commit] = (committer = genCommitter(modifiers));
@@ -56,9 +64,9 @@ define(function Demo1({ get, set }, refs) {
 		},
 		onMounted() {
 			const { input } = refs;
-			setInterval(() => {
-				commit("age", get("age") + 1);
-			}, 1000);
+			// setInterval(() => {
+			// 	commit("age", get("age") + 1);
+			// }, 1000);
 			input.addEventListener("input", () => {
 				commit("age", input.value * 1);
 			});
