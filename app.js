@@ -69,9 +69,7 @@ async function start() {
 	});
 
 	await loadDefintion("Ground");
-	const ins = makeInstance("Demo1");
-
-	container.appendChild(ins.root);
+	makeInstance("Demo1", container);
 }
 
 function app() {

@@ -1,24 +1,75 @@
-define(function Demo1() {
+define(function Demo1({ get, set }, refs) {
+	const modifiers = {
+		name: ["div/ul/li/label", "div/ul/li/input", "div/ul/li/input$1"],
+		age: ["div/ul/li$1/input", "div/ul/li$1/span"],
+		weight: ["div/ul/li$2/input"],
+	};
+
+	const mutations_effects = {
+		age: ["weight"],
+	};
+
+	const mutations_deps = {
+		weight: ["age"],
+	};
+
+	const deps = {
+		weight: (v) => v * 8.7,
+	};
+
 	const variables = {
 		items: [],
 		name: "Jassecia",
 		age: 19,
+
+		// cached
+		weight: 0,
 	};
 
 	const children = {
 		div: noop,
-		"div/ul": () => ({ name: "container", tags: { container: true } }),
+		"div/ul": () => ({ $name: "container", tags: { container: true } }),
 		"div/ul/li": () => ({ tags: { name: true } }),
 		"div/ul/li/label": () => ({ tx: "name" }),
-		"div/ul/li/input": ({ get }) => ({ tx: get("name") }),
+		"div/ul/li/input": ({ get, set }) => ({
+			value: get("name"),
+			"@input": (e) => set("name", e.target.value),
+		}),
+		"div/ul/li/input$1": ({ get }) => ({ value: get("name") }),
 		"div/ul/li$1": () => ({ tags: { age: true } }),
 		"div/ul/li$1/label": () => ({ tx: "age" }),
-		"div/ul/li$1/input": ({ get }) => ({ tx: get("age") }),
+		"div/ul/li$1/input": ({ get }) => ({
+			$name: "input",
+			value: get("age"),
+		}),
+		"div/ul/li$1/span": ({ get }) => ({ tx: get("age") }),
+		"div/ul/li$2": () => ({ tags: { weight: true } }),
+		"div/ul/li$2/label": ({ get }) => ({ tx: "weight" }),
+		"div/ul/li$2/input": ({ get }) => ({ value: get("weight") }),
 	};
 
+	const [commit] = (committer = genCommitter(modifiers));
+
 	return {
+		onCreate() {
+			console.log("has created.");
+		},
+		onMounted() {
+			const { input } = refs;
+			setInterval(() => {
+				commit("age", get("age") + 1);
+			}, 1000);
+			input.addEventListener("input", () => {
+				commit("age", input.value * 1);
+			});
+		},
 		variables,
 		children,
+		modifiers,
+		mutations_effects,
+		mutations_deps,
+		deps,
+		committer,
 	};
 });
 

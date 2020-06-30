@@ -66,7 +66,7 @@ function genIterations(...collections) {
 	};
 	return (fn) => _(fn, ...collections);
 }
-
+let s;
 function genContextor() {
 	const store = {};
 	s = store;
@@ -80,17 +80,24 @@ function genContextor() {
 		withBy,
 	});
 
-	const access = (scope, key, val, is_local = true) => {
+	const access = (scope, key, val, { is_local = true } = {}) => {
 		if (!isEmptyString(scope)) {
 			const m = fallback({})(store[scope]);
 			const value = m[key];
 			store[scope] = m;
 
-			if (isEmpty(value)) {
+			if (isEmpty(value) && scope !== "/") {
 				const scp = scope.split("/");
 				scp.splice(-1);
 
-				return access(scp.join("/"), key, val, false);
+				const scope_next =
+					scp.length === 1 && isEmptyString(first(scp))
+						? "/"
+						: scp.join("/");
+
+				return access(scope_next, key, val, {
+					is_local: false,
+				});
 			} else {
 				if (isNotEmpty(val)) {
 					return [(m[key] = val), is_local];
@@ -103,8 +110,9 @@ function genContextor() {
 	};
 
 	function set(scope, context) {
+		scope = scope.startsWith("/") ? scope : "/" + scope;
 		Object.entries(context).map(([key, value]) => {
-			const [r] = !!access(scope, key, value);
+			const [r] = access(scope, key, value);
 			if (isEmpty(r)) {
 				console.error(`Undefined variable "${key}"`);
 			}
@@ -113,6 +121,7 @@ function genContextor() {
 	}
 
 	function def(scope, context) {
+		scope = scope.startsWith("/") ? scope : "/" + scope;
 		const m = fallback({})(store[scope]);
 		store[scope] = m;
 
@@ -125,6 +134,7 @@ function genContextor() {
 	}
 
 	function getL(scope, key) {
+		scope = scope.startsWith("/") ? scope : "/" + scope;
 		const [r] = (rst = access(scope, key, undefined));
 		if (isEmpty(r)) {
 			console.error(`Undefined variable "${key}"`);
@@ -177,4 +187,24 @@ function isLogicalSolid(solid_name, which = solid_name) {
 
 function isSpecialSolid(solid_name, which = solid_name) {
 	return solid_name in SPECIALSOLID && which === solid_name;
+}
+
+function genCommitter(modifiers) {
+	const list = new Set();
+	function fire({ variables }) {
+		for (const fn of list) {
+			fn({ variables });
+		}
+	}
+	function commit(variable_name, value) {
+		if (variable_name in modifiers) {
+			fire({ variables: { [variable_name]: value } });
+		}
+		return value;
+	}
+	function listen(fn) {
+		list.add(fn);
+		return () => list.delete(fn);
+	}
+	return assign([commit, listen], { commit, listen });
 }

@@ -64,6 +64,7 @@
 			const [get, set, def] = genContextor();
 
 			def("/", { a: "12" });
+			def("/b", { a: "33" });
 
 			console.log(get("/b", "a"));
 		</script>
