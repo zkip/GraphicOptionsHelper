@@ -27,8 +27,6 @@ define(function Demo1({ get, set }, refs) {
 		age: 19,
 
 		// cached
-		weight: 0,
-		var3: 0,
 	};
 
 	const children = {
@@ -64,9 +62,9 @@ define(function Demo1({ get, set }, refs) {
 		},
 		onMounted() {
 			const { input } = refs;
-			// setInterval(() => {
-			// 	commit("age", get("age") + 1);
-			// }, 1000);
+			setInterval(() => {
+				commit("age", get("age") + 1);
+			}, 1000);
 			input.addEventListener("input", () => {
 				commit("age", input.value * 1);
 			});

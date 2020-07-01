@@ -202,9 +202,12 @@ function genCommitter(modifiers) {
 		}
 		return value;
 	}
+	function commits(opts) {
+		return Object.entries(opts).map(([key, value]) => commit(key, value));
+	}
 	function listen(fn) {
 		list.add(fn);
 		return () => list.delete(fn);
 	}
-	return assign([commit, listen], { commit, listen });
+	return assign([commit, listen], { commit, commits, listen });
 }

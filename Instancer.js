@@ -48,10 +48,7 @@ function makeInstance(name, node_parent_pure, { ...props } = {}) {
 		console.log(modifiers);
 
 		defContext("/", variables);
-
-		// setInterval(() => {
-		// 	console.log(s);
-		// }, 1000);
+		defContext("/", deps);
 
 		let isInDynamicContext = false;
 
@@ -139,10 +136,11 @@ function makeInstance(name, node_parent_pure, { ...props } = {}) {
 					if (isInDynamicContext) {
 						resolveToPure();
 					} else {
+						const contextor_mutable = makeMutable(
+							contextor.withBy(solid_path)
+						);
 						const { $name, ...option } =
-							mutation_action(
-								makeMutable(contextor.withBy(solid_path))
-							) || {};
+							mutation_action(contextor_mutable) || {};
 						const node = genNode(self_solid, { props, ...option });
 						node_map[solid_path] = node.root;
 						if (isNotEmpty($name)) {
@@ -220,6 +218,10 @@ function makeInstance(name, node_parent_pure, { ...props } = {}) {
 
 			// applyToDOM(mutated_nodes);
 		});
+
+		committer.commits(variables);
+
+		setContext("/", { weight: 30 });
 
 		function evaluate(...dep_names) {
 			return dep_names.map((dep_name) => getContext("/", dep_name));
