@@ -1,4 +1,4 @@
-define(function Demo1({ get, set }, refs) {
+define(function Demo1({ get, set }) {
 	const modifiers = {
 		name: ["div/ul/li/label", "div/ul/li/input", "div/ul/li/input$1"],
 		age: ["div/ul/li$1/input", "div/ul/li$1/span"],
@@ -57,11 +57,11 @@ define(function Demo1({ get, set }, refs) {
 	const [commit] = (committer = genCommitter(modifiers));
 
 	return {
-		onCreate() {
+		onCreated() {
 			console.log("has created.");
 		},
-		onMounted() {
-			const { input } = refs;
+		onMounted({ input }) {
+			console.log("has mounted.");
 			setInterval(() => {
 				commit("age", get("age") + 1);
 			}, 1000);
@@ -79,54 +79,72 @@ define(function Demo1({ get, set }, refs) {
 	};
 });
 
-define(function Ground01() {
-	const variables = {
-		items: [],
-	};
-	const children = {
-		div: noop,
-		"div/@for": ({ set, get, def }) => {
-			def("i", 0);
-			return {
-				cond: () => get("i") < 10,
-				defer: () => set("i", get("i") + 1),
-			};
-		},
-		"div/@for/@for": ({ set, get, def }) => {
-			def({ j: 0, item: get["items"][0] });
-			return {
-				cond() {
-					const [items, j] = get("items", "j");
-					return j < items.length;
-				},
-				defer() {
-					const [j] = get("j");
-					set({ j: j + 1, item: items[j] });
-				},
-			};
-		},
-		"div/@for/@for/@for": ({ set, get, def }) => {
-			def({ x: get("i") * get("j") });
-		},
-		"div/@for/@for/@for/@if": ({ set, get }) => get("x") > 2,
-		"div/@for/@for/@for/@if/@": ({ set, get }) => {
-			set("x", get("x") + 1);
-		},
-		"div/@for/@for/@for/@else": noop,
-		"div/@for/@for/@for/@else/@": ({ set, get }) => {
-			set("x", get("x") + 3);
-		},
-		"div/@for/@for/@for/@if$1": ({ set, get }) => get("x") > 30,
-		"div/@for/@for/@for/@if$1/span": noop,
-		"div/@for/@for/@for/@if$1/span/div": () => ({ tx: "JJJ" }),
-		"div/@for/@for/@for/@if$1/span/label": ({ get }) => ({
-			tx: get("item"),
-		}),
-		"div/@for/@for/@for/@if$1/@break": noop,
+define(function Demo2({ get, set }) {
+	const modifiers = {
+		count: ["div/ul/@for"],
 	};
 
+	const mutations_effects = {};
+
+	const mutations_deps = {};
+
+	const deps = {};
+
+	const variables = {
+		count: 10,
+	};
+
+	const children = {
+		div: noop,
+		"div/ul": () => ({ $name: "container", tags: { container: true } }),
+		"div/ul/@for": ({ get, set, def }) => ({
+			$iteration: () => {
+				let i = 0;
+				return {
+					condition: () => i < get("count"),
+					locals: () => [i],
+					defer: () => {
+						i++;
+					},
+				};
+			},
+		}),
+		"div/ul/@for/li": ({ get }, ...args) => ({
+			tx: args,
+		}),
+		"div/ul/@for/li/@for": ({ get }) => ({
+			$iteration: ([i]) => {
+				let j = 0;
+				return {
+					condition: () => j < i,
+					locals: () => [j],
+					defer: () => {
+						j++;
+					},
+				};
+			},
+		}),
+		"div/ul/@for/li/@for/span": ({ get }, ...args) => ({
+			tx: args,
+		}),
+		"div/ul/@for/li/@for/span/span": ({ get }, ...args) => ({
+			tx: args,
+		}),
+	};
+
+	const [commit] = (committer = genCommitter(modifiers));
+
 	return {
+		onCreated() {
+			console.log("has created.");
+		},
+		onMounted({}) {},
 		variables,
 		children,
+		modifiers,
+		mutations_effects,
+		mutations_deps,
+		deps,
+		committer,
 	};
 });

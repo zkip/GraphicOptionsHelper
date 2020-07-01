@@ -69,7 +69,8 @@ async function start() {
 	});
 
 	await loadDefintion("Ground");
-	makeInstance("Demo1", container);
+	const preper = makeInstance("Demo2");
+	preper(container);
 }
 
 function app() {

@@ -5,55 +5,55 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Document</title>
 		<script src="utils.js"></script>
-		<script>
-			// let items = ["a", "b", "c", "d"];
-			// let items2 = ["1", "2", "3", "4"];
-			// const collections = [
-			// 	() => {
-			// 		let i = 0;
-			// 		let item = items[i];
-			// 		return {
-			// 			cond: () => i < items.length,
-			// 			locals: () => [item, i],
-			// 			defer: () => {
-			// 				i++;
-			// 				item = items[i];
-			// 			},
-			// 		};
-			// 	},
-			// 	() => {
-			// 		let i = 0;
-			// 		let item = items2[i];
-			// 		return {
-			// 			cond: () => i < items2.length,
-			// 			locals: () => [item, i],
-			// 			defer: () => {
-			// 				i++;
-			// 				item = items2[i];
-			// 			},
-			// 		};
-			// 	},
-			// 	// () => {
-			// 	// 	let i = 0;
-			// 	// 	let item = items[i];
-			// 	// 	return {
-			// 	// 		cond: () => i < items.length,
-			// 	// 		locals: () => [i, item],
-			// 	// 		defer: () => {
-			// 	// 			i++;
-			// 	// 			item = items[i];
-			// 	// 		},
-			// 	// 	};
-			// 	// },
-			// ];
+		<!-- <script>
+			let items = ["a", "b", "c", "d"];
+			let items2 = ["1", "2", "3", "4"];
+			const collections = [
+				() => {
+					let i = 0;
+					let item = items[i];
+					return {
+						cond: () => i < items.length,
+						locals: () => [item, i],
+						defer: () => {
+							i++;
+							item = items[i];
+						},
+					};
+				},
+				() => {
+					let i = 0;
+					let item = items2[i];
+					return {
+						cond: () => i < items2.length,
+						locals: () => [item, i],
+						defer: () => {
+							i++;
+							item = items2[i];
+						},
+					};
+				},
+				// () => {
+				// 	let i = 0;
+				// 	let item = items[i];
+				// 	return {
+				// 		cond: () => i < items.length,
+				// 		locals: () => [i, item],
+				// 		defer: () => {
+				// 			i++;
+				// 			item = items[i];
+				// 		},
+				// 	};
+				// },
+			];
 
-			// const iterations = genIterations(...collections);
+			const iterations = genIterations(...collections);
 
-			// iterations(([item1, idx1], [item2, idx2]) => {
-			// 	console.log(item1, idx1, item2, idx2);
-			// });
-		</script>
-		<script>
+			iterations(([item1, idx1], [item2, idx2]) => {
+				console.log(item1, idx1, item2, idx2);
+			});
+		</script> -->
+		<!-- <script>
 			// const str = "jack&fx";
 			// const p = 2;
 			// console.log(str.slice(p));
@@ -67,6 +67,46 @@
 			def("/b", { a: "33" });
 
 			console.log(get("/b", "a"));
+		</script> -->
+		<!-- <script>
+			console.log(isInDynamicContext("div"));
+			console.log(isInDynamicContext("@for"));
+			console.log(isInDynamicContext("@for/div/@if"));
+			console.log(isInDynamicContext("div/@for"));
+			console.log(isInDynamicContext("div/div/@for"));
+			console.log(isInDynamicContext("div/@for/div"));
+			console.log(isInDynamicContext("div/@for/div/span"));
+		</script> -->
+
+		<!-- <script>
+			console.log(genNodePureId("@for/p/p", [0]) === "@for/p#0/p");
+			console.log(
+				genNodePureId("@for/p/p/@for", [0]) === "@for/p#0/p/@for"
+			);
+			console.log(
+				genNodePureId("@for/@for/p", [2, 0]) === "@for/@for#2/p#0"
+			);
+			console.log(
+				genNodePureId("@for/@for/@for/p", [2, 0, 1]) ===
+					"@for/@for#2/@for#0/p#1"
+			);
+
+			console.log(
+				genNodePureId("@for/p/@for/p", [1, 2]) === "@for/p#1/@for/p#2"
+			);
+			console.log(
+				genNodePureId("@for/p/@for/p/@for/@for/@for/p", [
+					1,
+					2,
+					3,
+					7,
+					1,
+				]) === "@for/p#1/@for/p#2/@for/@for#3/@for#7/p#1"
+			);
+		</script> -->
+		<script>
+			console.log(trimToPureEndNode("@for/@for/@for", [0, 0]));
+			console.log(trimToPureEndNode("@for/div/ul/@for/span", [0]));
 		</script>
 	</head>
 	<body></body>

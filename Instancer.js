@@ -1,4 +1,4 @@
-function makeInstance(name, node_parent_pure, { ...props } = {}) {
+function makeInstance(name, { ...props } = {}) {
 	if (CstorM.has(name)) {
 		const cstor = CstorM.get(name);
 
@@ -22,14 +22,19 @@ function makeInstance(name, node_parent_pure, { ...props } = {}) {
 		};
 
 		// Lifecycle:init
-		const tail = cstor(contextor.withBy("/"), refs);
+		const tail = cstor(contextor.withBy("/"));
 
 		const root = document.createDocumentFragment();
 		const node_mutation_snapshot = {};
 		const node_map = {
 			// node_name SolidLiteral: DOM
 		};
+		const node_map_dynamic = {
+			// node_name SolidLiteral: DOM
+		};
+
 		const iteration_map = {};
+		const iteration_map_stacked = {};
 		const condition_map = {};
 		const logical_count_map = {};
 		const logical_position_map = {};
@@ -41,7 +46,7 @@ function makeInstance(name, node_parent_pure, { ...props } = {}) {
 			deps,
 			children: mutation_map,
 			variables,
-			onCreate,
+			onCreated,
 			onMounted,
 			committer,
 		} = tail;
@@ -49,8 +54,6 @@ function makeInstance(name, node_parent_pure, { ...props } = {}) {
 
 		defContext("/", variables);
 		defContext("/", deps);
-
-		let isInDynamicContext = false;
 
 		function getLogicalPosition(solid_path) {
 			return logical_position_map[solid_path];
@@ -60,26 +63,72 @@ function makeInstance(name, node_parent_pure, { ...props } = {}) {
 			return logical_count_map[parent_solid_path];
 		}
 
-		function resolveToPure(solid_name, { self, parent }, option) {
-			const isCondition =
-				context_type === "@if" ||
-				context_type === "@else" ||
-				context_type === "@case";
+		function resolveToPure(solid_path, self_solid) {
+			const {
+				context_type,
+				iteration,
+				condition,
+			} = resolveDynamicContext(solid_path);
 
-			if (isCondition()) {
-				const condition = getCondition();
-				const node = condition()
-					? genNode(solid_name, option)
+			// console.log(context_type, iteration, condition, "@@@@@@@@@");
+
+			if (context_type === "condition") {
+				const node = $condition()
+					? genNode(self_solid, node_option)
 					: genNode("&Comment");
 
-				if (isNotEmpty(self)) {
-					self.replaceWith(node);
+				if (isNotEmpty(self_node)) {
+					self_node.replaceWith(node);
 				} else {
 					return node;
 				}
-			} else if (context_type === "@") {
+			} else if (context_type === "iteration") {
+				return iteration;
 			} else if (context_type === "@for") {
 			}
+		}
+
+		function resolveRelIterations(solid_path) {
+			const iterations = [];
+			const collect = (path) => {
+				const iteration = iteration_map[path];
+				if (isNotEmpty(iteration)) {
+					iterations.push(iteration);
+				}
+
+				const nps = path.split("/");
+				nps.splice(-1);
+				if (nps.length > 0) {
+					collect(nps.join("/"));
+				}
+			};
+
+			collect(solid_path);
+
+			return iterations;
+		}
+
+		function resolveDynamicContext(solid_path) {
+			const collect = (path) => {
+				const nps = path.split("/");
+				const [self_solid_literal] = nps.splice(-1);
+				const self_solid = getSolidType(self_solid_literal);
+				if (isLogicalSolid(self_solid, "@if", "@else", "@case")) {
+					const context_type = "condition";
+					const condition = condition_map[path];
+
+					return { context_type, condition };
+				} else if (isLogicalSolid(self_solid, "@for")) {
+					const context_type = "iteration";
+					const iteration = iteration_map_stacked[path];
+
+					return { context_type, iteration };
+				} else {
+					return collect(nps.join("/"));
+				}
+			};
+
+			return collect(solid_path);
 		}
 
 		function applyToDOM(mutated_solids = Object.keys(mutation_map)) {
@@ -104,41 +153,63 @@ function makeInstance(name, node_parent_pure, { ...props } = {}) {
 
 				logical_position_map[solid_path] = lc;
 
-				// node_mutation_snapshot[solid_path] = mutation_action(
-				// 	contextor.withBy(solid_path)
-				// );
-
 				if (isLogicalSolid(self_solid)) {
 					const {
-						$context,
-						$iteration,
 						$condition,
+						$iteration,
 						...option
 					} = mutation_action(contextor.withBy(solid_path));
 
-					setContext(solid_path, $context);
+					node_map[solid_path] = parent_node;
 
 					if (self_solid === "@for") {
-						node_map[solid_path] = parent_node;
+						const reltive_iterations = resolveRelIterations(
+							solid_path
+						);
 
-						if (parent_solid === "@for") {
-						} else {
-							iteration_map[solid_path] = genIterations(
-								$iteration
-							);
-						}
+						console.log(reltive_iterations, "--------");
+
+						iteration_map[solid_path] = $iteration;
+						iteration_map_stacked[solid_path] = genIterations(
+							...reltive_iterations,
+							$iteration
+						);
+						console.log(iteration_map_stacked, "*****");
 					} else if (self_solid === "@if") {
 						condition_map[solid_path] = $condition;
 					}
-
-					isInDynamicContext = true;
 				} else {
-					if (isInDynamicContext) {
-						resolveToPure();
+					const contextor_mutable = makeMutable(
+						contextor.withBy(solid_path)
+					);
+
+					if (isInDynamicContext(solid_path)) {
+						const iteration = resolveToPure(solid_path, self_solid);
+						iteration((...args) => {
+							const { $name, ...option } =
+								mutation_action(contextor_mutable, ...args) ||
+								{};
+							const node = genNode(self_solid, {
+								props,
+								...option,
+							});
+
+							if (isLogicalSolid(parent_solid)) {
+								const id = genNodePureId(solid_path, args);
+								node_map_dynamic[id] = node.root;
+							}
+
+							const parent_solid_id = trimToPureEndNode(
+								parent_solid_path,
+								args
+							);
+							const parent_node =
+								node_map[parent_solid_id] ||
+								node_map_dynamic[parent_solid_id];
+
+							mount(parent_node, node.root);
+						});
 					} else {
-						const contextor_mutable = makeMutable(
-							contextor.withBy(solid_path)
-						);
 						const { $name, ...option } =
 							mutation_action(contextor_mutable) || {};
 						const node = genNode(self_solid, { props, ...option });
@@ -146,7 +217,6 @@ function makeInstance(name, node_parent_pure, { ...props } = {}) {
 						if (isNotEmpty($name)) {
 							refs[$name] = node.root;
 						}
-
 						mount(parent_node, node.root);
 					}
 
@@ -170,66 +240,65 @@ function makeInstance(name, node_parent_pure, { ...props } = {}) {
 			}
 		}
 
-		function getIteration(solid_path) {
-			return iteration_map[solid_path];
-		}
-
 		applyToDOM();
 
-		committer.listen(({ variables: vars }) => {
-			const mutated_nodes = [];
-			const variables_effected = [];
-			setContext("/", vars);
-			Object.entries(vars).map(([variable_name]) => {
-				const ens = modifiers[variable_name];
-				if (isNotEmpty(ens)) {
-					mutated_nodes.push(...ens);
-				}
+		onCreated();
 
-				if (variable_name in mutations_effects) {
-					const effected = mutations_effects[variable_name];
-					variables_effected.push(...effected);
+		return (node_parent_pure) => {
+			committer.listen(({ variables: vars }) => {
+				const mutated_nodes = [];
+				const variables_effected = [];
+				setContext("/", vars);
+				Object.entries(vars).map(([variable_name]) => {
+					const ens = modifiers[variable_name];
+					if (isNotEmpty(ens)) {
+						mutated_nodes.push(...ens);
+					}
 
-					// resolve the effected nodes by the dependent variables
-					effected.map((variable_name) => {
-						const ens = modifiers[variable_name];
-						if (isNotEmpty(ens)) {
-							mutated_nodes.push(...ens);
-						}
-					});
-				}
+					if (variable_name in mutations_effects) {
+						const effected = mutations_effects[variable_name];
+						variables_effected.push(...effected);
+
+						// resolve the effected nodes by the dependent variables
+						effected.map((variable_name) => {
+							const ens = modifiers[variable_name];
+							if (isNotEmpty(ens)) {
+								mutated_nodes.push(...ens);
+							}
+						});
+					}
+				});
+
+				// update the dependent variables
+				variables_effected.map((variable_name) => {
+					const deps_names = mutations_deps[variable_name];
+					const mutation_action = deps[variable_name];
+					const dep_values = evaluate(...deps_names);
+					const value = mutation_action(...dep_values);
+					setContext("/", { [variable_name]: value });
+				});
+
+				mutated_nodes.map((solid_path) => {
+					const node = node_map[solid_path];
+					const mutation_action = mutation_map[solid_path];
+					const option = mutation_action(
+						contextor.withBy(solid_path)
+					);
+					mapToNode(node, option);
+				});
+
+				// applyToDOM(mutated_nodes);
 			});
 
-			// update the dependent variables
-			variables_effected.map((variable_name) => {
-				const deps_names = mutations_deps[variable_name];
-				const mutation_action = deps[variable_name];
-				const dep_values = evaluate(...deps_names);
-				const value = mutation_action(...dep_values);
-				setContext("/", { [variable_name]: value });
-			});
+			committer.commits(variables);
 
-			mutated_nodes.map((solid_path) => {
-				const node = node_map[solid_path];
-				const mutation_action = mutation_map[solid_path];
-				const option = mutation_action(contextor.withBy(solid_path));
-				mapToNode(node, option);
-			});
+			function evaluate(...dep_names) {
+				return dep_names.map((dep_name) => getContext("/", dep_name));
+			}
 
-			// applyToDOM(mutated_nodes);
-		});
-
-		committer.commits(variables);
-
-		setContext("/", { weight: 30 });
-
-		function evaluate(...dep_names) {
-			return dep_names.map((dep_name) => getContext("/", dep_name));
-		}
-
-		mount(node_parent_pure, root);
-
-		onMounted();
+			mount(node_parent_pure, root);
+			onMounted(refs);
+		};
 	}
 }
 
@@ -296,8 +365,4 @@ function isJustDirectAssign(node_name, attribute) {
 		return attribute in DIRECTASSIGN[node_name];
 	}
 	return false;
-}
-
-function getSolidType(literal) {
-	return first(literal.split("$"));
 }

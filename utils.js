@@ -56,8 +56,8 @@ function genIterations(...collections) {
 	const _ = (fn, ...cs) => {
 		const receipt = cs.pop();
 		const next = (...args) => {
-			const { cond, defer, locals } = receipt();
-			while (cond()) {
+			const { condition, defer, locals } = receipt(...args);
+			while (condition()) {
 				fn(...args, locals());
 				defer();
 			}
@@ -66,11 +66,47 @@ function genIterations(...collections) {
 	};
 	return (fn) => _(fn, ...collections);
 }
-let s;
+
+function genNodePureId(solid_path, args) {
+	let nps = solid_path.split("/");
+	let count = 0;
+	for (let i = 0; i < nps.length; i++) {
+		const seg = nps[i];
+		if (seg.startsWith("@for")) {
+			if (i + 1 < nps.length) {
+				nps[i + 1] = nps[i + 1] + "#" + [args[count]];
+				count++;
+			}
+		}
+	}
+	return nps.join("/");
+}
+
+function getSolidType(literal) {
+	return first(first(literal.split("$")).split("#"));
+}
+
+function trimToPureEndNode(parent_solid_path, args) {
+	const parent_solid_id = genNodePureId(parent_solid_path, args);
+	const trim = (path) => {
+		const nps = path.split("/");
+		const [self_solid_literal] = nps.splice(-1);
+		const self_solid = getSolidType(self_solid_literal);
+		if (isLogicalSolid(self_solid)) {
+			if (nps.length === 0) {
+				return "/";
+			}
+			return trim(nps.join("/"));
+		} else {
+			nps.push(self_solid_literal);
+			return nps.join("/");
+		}
+	};
+	return trim(parent_solid_id);
+}
+
 function genContextor() {
 	const store = {};
-	s = store;
-	console.log(store);
 
 	const result = assign([get, set, def], {
 		get,
@@ -187,6 +223,14 @@ function isLogicalSolid(solid_name, which = solid_name) {
 
 function isSpecialSolid(solid_name, which = solid_name) {
 	return solid_name in SPECIALSOLID && which === solid_name;
+}
+
+function isInDynamicContext(solid_path) {
+	const nps = solid_path.split("/");
+	const rs = nps
+		.map((seg, idx) => (seg.startsWith("@") ? idx : -1))
+		.filter((v) => v >= 0);
+	return rs.length === 0 ? false : first(rs) + 1 < nps.length;
 }
 
 function genCommitter(modifiers) {
