@@ -104,9 +104,38 @@
 				]) === "@for/p#1/@for/p#2/@for/@for#3/@for#7/p#1"
 			);
 		</script> -->
-		<script>
+		<!-- <script>
 			console.log(trimToPureEndNode("@for/@for/@for", [0, 0]));
 			console.log(trimToPureEndNode("@for/div/ul/@for/span", [0]));
+		</script> -->
+		<script>
+			const iteration = genIterations(
+				() => {
+					let i = 0;
+					let id = i;
+					return {
+						condition: () => i < 10,
+						locals: () => [id],
+						defer() {
+							i++;
+							id = i * 2;
+						},
+					};
+				},
+				([c]) => {
+					let i = 0;
+					return {
+						condition: () => i < c,
+						locals: () => [i * 2],
+						defer() {
+							i++;
+						},
+					};
+				}
+			);
+			iteration((indices, [id], [i]) => {
+				console.log(indices, id, i);
+			});
 		</script>
 	</head>
 	<body></body>

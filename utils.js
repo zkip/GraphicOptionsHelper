@@ -52,29 +52,38 @@ function fallback(back_value) {
 	return (v = back_value) => v;
 }
 
+// fallback to object
+const fallbackToObject = fallback({});
+
 function genIterations(...collections) {
 	const _ = (fn, ...cs) => {
 		const receipt = cs.pop();
-		const next = (...args) => {
-			const { condition, defer, locals } = receipt(...args);
+		const next = ([...indices], { ...effects }, ...args) => {
+			const { condition, defer, locals = noop } = receipt(
+				[...indices],
+				effects,
+				...args
+			);
+			let index = 0;
 			while (condition()) {
-				fn(...args, locals());
+				fn([...indices, index], ...args, locals());
 				defer();
+				index++;
 			}
 		};
-		return cs.length > 0 ? _(next, ...cs) : next();
+		return cs.length > 0 ? _(next, ...cs) : next([], {});
 	};
 	return (fn) => _(fn, ...collections);
 }
 
-function genNodePureId(solid_path, args) {
+function genNodePureId(solid_path, indices) {
 	let nps = solid_path.split("/");
 	let count = 0;
 	for (let i = 0; i < nps.length; i++) {
 		const seg = nps[i];
 		if (seg.startsWith("@for")) {
 			if (i + 1 < nps.length) {
-				nps[i + 1] = nps[i + 1] + "#" + [args[count]];
+				nps[i + 1] = nps[i + 1] + "#" + [indices[count]];
 				count++;
 			}
 		}
@@ -86,8 +95,8 @@ function getSolidType(literal) {
 	return first(first(literal.split("$")).split("#"));
 }
 
-function trimToPureEndNode(parent_solid_path, args) {
-	const parent_solid_id = genNodePureId(parent_solid_path, args);
+function trimToPureEndNode(parent_solid_path, indices) {
+	const parent_solid_id = genNodePureId(parent_solid_path, indices);
 	const trim = (path) => {
 		const nps = path.split("/");
 		const [self_solid_literal] = nps.splice(-1);
@@ -103,6 +112,12 @@ function trimToPureEndNode(parent_solid_path, args) {
 		}
 	};
 	return trim(parent_solid_id);
+}
+
+function collectIterationsByDownstream(solid_path, iteration_map) {
+	return Object.entries(iteration_map).filter(([key, value]) =>
+		key.startsWith(solid_path)
+	);
 }
 
 function genContextor() {

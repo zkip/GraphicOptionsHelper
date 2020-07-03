@@ -81,28 +81,30 @@ define(function Demo1({ get, set }) {
 
 define(function Demo2({ get, set }) {
 	const modifiers = {
-		count: ["div/ul/@for"],
+		count: ["div/span", "div/ul/@for"],
 	};
 
 	const mutations_effects = {};
 
 	const mutations_deps = {};
 
+	const mutations_pure = {};
+
 	const deps = {};
 
 	const variables = {
-		count: 10,
+		count: 3,
 	};
 
 	const children = {
 		div: noop,
+		"div/span": ({ get }) => ({ tx: get("count") }),
 		"div/ul": () => ({ $name: "container", tags: { container: true } }),
 		"div/ul/@for": ({ get, set, def }) => ({
-			$iteration: () => {
+			$iteration: (indices, effects, ...args) => {
 				let i = 0;
 				return {
 					condition: () => i < get("count"),
-					locals: () => [i],
 					defer: () => {
 						i++;
 					},
@@ -112,33 +114,41 @@ define(function Demo2({ get, set }) {
 		"div/ul/@for/li": ({ get }, ...args) => ({
 			tx: args,
 		}),
-		"div/ul/@for/li/@for": ({ get }) => ({
-			$iteration: ([i]) => {
+		"div/ul/@for/li/@for": ({ get, gfs }) => ({
+			$effects: () => ({
+				randCount: Math.random(),
+			}),
+			// snapshot function
+			$iteration: ([i], ...args) => {
 				let j = 0;
 				return {
-					condition: () => j < i,
-					locals: () => [j],
+					condition: () => j < gfs("randCount"),
 					defer: () => {
-						j++;
+						j += 1;
 					},
 				};
 			},
 		}),
-		"div/ul/@for/li/@for/span": ({ get }, ...args) => ({
-			tx: args,
+		"div/ul/@for/li/@for/span": ({ get }, indices, ...args) => ({
+			tx: indices,
 		}),
-		"div/ul/@for/li/@for/span/span": ({ get }, ...args) => ({
-			tx: args,
+		"div/ul/@for/li/@for/span/span": ({ get }, indices, ...args) => ({
+			tx: indices,
 		}),
 	};
 
-	const [commit] = (committer = genCommitter(modifiers));
+	const committer = genCommitter(modifiers);
+	const [commit] = committer;
 
 	return {
 		onCreated() {
 			console.log("has created.");
 		},
-		onMounted({}) {},
+		onMounted({}) {
+			addEventListener("click", () => {
+				commit("count", (Math.random() * 3) >> 0);
+			});
+		},
 		variables,
 		children,
 		modifiers,
