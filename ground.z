@@ -67,3 +67,29 @@ frag {
 		}
 	}
 }
+
+// 
+frag {
+	div {
+		@for i = 0; i < rand( 0 10 ); i++ {
+			span toString( i )
+		}
+	}
+	div {
+		@for i = 0; i < 10; i += rand( 0 10) {
+			span toString( i )
+		}
+	}
+	div {
+		@for i = 0; i < 10; i += rand( 0, 10 - i ) {
+			span toString( i )
+			@for j = 0; j < 10; j ++ {
+				if j > i {
+					i -= rand( 0, i )
+				} else {	
+					p `${i}, ${i}`
+				}
+			}
+		}
+	}
+}
