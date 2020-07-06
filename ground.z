@@ -129,7 +129,7 @@ type Demo2 {
 			ul #container .container {
 				@for let i = 0; i < count; i++ {
 					li toString(i) {
-						@for let j = 0; j < i; j += rand( 0, i ) {
+						@for let j = 0; j < i; j += rand( 1, i ) {
 							span `${i},${j}` {
 								span `${i},${j}`
 							}

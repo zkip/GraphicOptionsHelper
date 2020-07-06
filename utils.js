@@ -122,7 +122,10 @@ function collectIterationsByDownstream(solid_path, iteration_map) {
 function genContextor() {
 	const store = {};
 	const transformer_map = {};
-	const evaluate_map = {};
+	const evaluates_map = {};
+	const actions_map = {};
+	const need_update_map = {};
+	const values_cached = {};
 
 	const result = assign([get, set, def], {
 		get,
@@ -202,13 +205,38 @@ function genContextor() {
 
 	// get effects
 	function gfs(scope, indices, name, ...args) {
-		// console.log(scope, indices, name, ...args, transformer_map, "@@@");
 		const tfms_scoped = transformer_map[scope];
 		if (isNotEmpty(tfms_scoped)) {
 			const transformer = tfms_scoped[name];
 			if (isNotEmpty(transformer)) {
-				// console.log(transformer_map, scope, name, "@@@");
-				return transformer(...args);
+				const amm = fallback({})(actions_map[scope]);
+				const emm = fallback({})(evaluates_map[scope]);
+				const nmm = fallback({})(need_update_map[scope]);
+				const vcm = fallback({})(values_cached[scope]);
+
+				if (!(name in amm)) {
+					const [update, get] = cache(transformer);
+					(actions_map[scope] = amm)[name] = update;
+					(evaluates_map[scope] = emm)[name] = get;
+					(need_update_map[scope] = nmm)[name] = true;
+					(values_cached[scope] = vcm)[name] = [];
+				}
+
+				const local_index = last(indices);
+				if (!(local_index in vcm[name])) {
+					nmm[name] = true;
+				}
+
+				if (nmm[name]) {
+					vcm[name][local_index] = amm[name](...args);
+					nmm[name] = false;
+				}
+
+				console.log(values_cached);
+				// console.log(actions_map, evaluates_map, need_update_map);
+				return emm[name]();
+				// return evaluates_map[scope][name]();
+				// return transformer(...args);
 			}
 		}
 	}

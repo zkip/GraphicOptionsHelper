@@ -93,7 +93,7 @@ define(function Demo2({ get, set }) {
 	const deps = {};
 
 	const variables = {
-		count: 3,
+		count: 10,
 	};
 
 	const children = {
@@ -119,19 +119,19 @@ define(function Demo2({ get, set }) {
 				randCount: "Unit",
 			}),
 			$effects: () => ({
-				randCount: (i) => (Math.random() * i) >> 0,
+				randCount: (i) => {
+					console.log("iiiiiiiiiiiiii", i);
+					return ((Math.random() * (i - 1) + 1) >> 0) + 1;
+				},
 			}),
 			// pure function
 			$iteration: (indices, ...args) => {
 				const [i] = indices;
 				let j = 0;
 				return {
-					condition: () => j < i,
+					condition: () => j < 10,
 					defer: () => {
-						let step = gfs(indices, "randCount", i);
-						if (step === 0) {
-							step = 1;
-						}
+						const step = gfs(indices, "randCount", i);
 						j += step;
 					},
 				};
