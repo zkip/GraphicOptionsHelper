@@ -93,3 +93,50 @@ frag {
 		}
 	}
 }
+
+//
+frag {
+	div {
+		@ let j = 0
+		@for i = 0; i < 10; i++ {
+			@if i < 3 {
+				@ j++
+			} esle {
+				@ j += rand( 0, j )
+			}
+		}
+	}
+}
+
+//
+frag {
+	div {
+		@ let j = 0
+		@for i = 0; i < 10; i++ {
+			@if i < rand( 0, 10 ) {
+				div toString(( j += rand( 0, j ), j ))
+			}
+		}
+	}
+}
+
+type Demo2 {
+	count uint 3
+
+	frag {
+		div {
+			span toString(count)
+			ul #container .container {
+				@for let i = 0; i < count; i++ {
+					li toString(i) {
+						@for let j = 0; j < i; j += rand( 0, i ) {
+							span `${i},${j}` {
+								span `${i},${j}`
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

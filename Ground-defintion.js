@@ -101,7 +101,7 @@ define(function Demo2({ get, set }) {
 		"div/span": ({ get }) => ({ tx: get("count") }),
 		"div/ul": () => ({ $name: "container", tags: { container: true } }),
 		"div/ul/@for": ({ get, set, def }) => ({
-			$iteration: (indices, effects, ...args) => {
+			$iteration: (indices, ...args) => {
 				let i = 0;
 				return {
 					condition: () => i < get("count"),
@@ -111,20 +111,28 @@ define(function Demo2({ get, set }) {
 				};
 			},
 		}),
-		"div/ul/@for/li": ({ get }, ...args) => ({
-			tx: args,
+		"div/ul/@for/li": ({ get }, indices, ...args) => ({
+			tx: indices,
 		}),
-		"div/ul/@for/li/@for": ({ get, gfs }) => ({
-			$effects: () => ({
-				randCount: Math.random(),
+		"div/ul/@for/li/@for": ({ get, def, gfs }) => ({
+			$types: () => ({
+				randCount: "Unit",
 			}),
-			// snapshot function
-			$iteration: ([i], ...args) => {
+			$effects: () => ({
+				randCount: (i) => (Math.random() * i) >> 0,
+			}),
+			// pure function
+			$iteration: (indices, ...args) => {
+				const [i] = indices;
 				let j = 0;
 				return {
-					condition: () => j < gfs("randCount"),
+					condition: () => j < i,
 					defer: () => {
-						j += 1;
+						let step = gfs(indices, "randCount", i);
+						if (step === 0) {
+							step = 1;
+						}
+						j += step;
 					},
 				};
 			},

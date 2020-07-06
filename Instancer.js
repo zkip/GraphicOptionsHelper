@@ -35,7 +35,10 @@ function makeInstance(name, { ...props } = {}) {
 		const logical_count_map = {};
 		const logical_position_map = {};
 
+		const effects_map = {};
+
 		console.log(node_map_dynamic);
+		console.log(effects_map);
 
 		const {
 			modifiers,
@@ -120,7 +123,13 @@ function makeInstance(name, { ...props } = {}) {
 					const context_type = "iteration";
 					const iteration = iteration_map_stacked[path];
 
-					return { context_type, iteration };
+					nps.push("@for");
+
+					return {
+						context_type,
+						iteration,
+						solid_path: nps.join("/"),
+					};
 				} else {
 					return collect(nps.join("/"));
 				}
@@ -155,6 +164,8 @@ function makeInstance(name, { ...props } = {}) {
 					const {
 						$condition,
 						$iteration,
+						$effects,
+						$types,
 						...option
 					} = mutation_action(contextor.withBy(solid_path));
 
@@ -170,6 +181,12 @@ function makeInstance(name, { ...props } = {}) {
 							...reltive_iterations,
 							$iteration
 						);
+
+						if (isNotEmpty($effects)) {
+							const opts = $effects();
+							console.log(opts, "_____");
+							effects_map[solid_path] = $effects;
+						}
 					} else if (self_solid === "@if") {
 						condition_map[solid_path] = $condition;
 					}
@@ -181,6 +198,19 @@ function makeInstance(name, { ...props } = {}) {
 					if (isInDynamicContext(solid_path)) {
 						let count = 0;
 						const iteration = resolveToPure(solid_path, self_solid);
+						const {
+							solid_path: iteration_solid_path,
+						} = resolveDynamicContext(solid_path);
+
+						// resolve the effect actions
+						const effects = effects_map[iteration_solid_path];
+						if (isNotEmpty(effects)) {
+							contextor.setTransformers(
+								iteration_solid_path,
+								effects()
+							);
+						}
+
 						iteration((indices, ...args) => {
 							const { $name, ...option } = fallbackToObject(
 								mutation_action(
@@ -197,7 +227,7 @@ function makeInstance(name, { ...props } = {}) {
 							count++;
 
 							if (isLogicalSolid(parent_solid)) {
-								const id = genNodePureId(solid_path, indices);
+								const id = genNodePureID(solid_path, indices);
 								node_map_dynamic[id] = node.root;
 							}
 

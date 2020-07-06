@@ -58,10 +58,9 @@ const fallbackToObject = fallback({});
 function genIterations(...collections) {
 	const _ = (fn, ...cs) => {
 		const receipt = cs.pop();
-		const next = ([...indices], { ...effects }, ...args) => {
+		const next = ([...indices], ...args) => {
 			const { condition, defer, locals = noop } = receipt(
 				[...indices],
-				effects,
 				...args
 			);
 			let index = 0;
@@ -71,12 +70,12 @@ function genIterations(...collections) {
 				index++;
 			}
 		};
-		return cs.length > 0 ? _(next, ...cs) : next([], {});
+		return cs.length > 0 ? _(next, ...cs) : next([]);
 	};
 	return (fn) => _(fn, ...collections);
 }
 
-function genNodePureId(solid_path, indices) {
+function genNodePureID(solid_path, indices) {
 	let nps = solid_path.split("/");
 	let count = 0;
 	for (let i = 0; i < nps.length; i++) {
@@ -96,7 +95,7 @@ function getSolidType(literal) {
 }
 
 function trimToPureEndNode(parent_solid_path, indices) {
-	const parent_solid_id = genNodePureId(parent_solid_path, indices);
+	const parent_solid_id = genNodePureID(parent_solid_path, indices);
 	const trim = (path) => {
 		const nps = path.split("/");
 		const [self_solid_literal] = nps.splice(-1);
@@ -122,15 +121,20 @@ function collectIterationsByDownstream(solid_path, iteration_map) {
 
 function genContextor() {
 	const store = {};
+	const transformer_map = {};
+	const evaluate_map = {};
 
 	const result = assign([get, set, def], {
 		get,
 		getL,
+		gfs,
 		set,
 		def,
 		withBy,
+		setTransformers,
 	});
 
+	// [ value any, isLocal bool ]
 	const access = (scope, key, val, { is_local = true } = {}) => {
 		if (!isEmptyString(scope)) {
 			const m = fallback({})(store[scope]);
@@ -180,26 +184,49 @@ function genContextor() {
 		return result;
 	}
 
-	function get(...args) {
-		return getL(...args)[0];
+	function get(scope, key, ...args) {
+		return getL(scope, key, noop, ...args)[0];
 	}
 
-	function getL(scope, key) {
+	function getL(scope, key, ...args) {
 		scope = scope.startsWith("/") ? scope : "/" + scope;
-		const [r] = (rst = access(scope, key, undefined));
-		if (isEmpty(r)) {
+		const result = access(scope, key, undefined);
+		const [value] = result;
+
+		if (isEmpty(value)) {
 			console.error(`Undefined variable "${key}"`);
 		}
 
-		return rst;
+		return result;
+	}
+
+	// get effects
+	function gfs(scope, indices, name, ...args) {
+		// console.log(scope, indices, name, ...args, transformer_map, "@@@");
+		const tfms_scoped = transformer_map[scope];
+		if (isNotEmpty(tfms_scoped)) {
+			const transformer = tfms_scoped[name];
+			if (isNotEmpty(transformer)) {
+				// console.log(transformer_map, scope, name, "@@@");
+				return transformer(...args);
+			}
+		}
+	}
+
+	function setTransformers(scope, transformers) {
+		console.log(transformer_map, transformers);
+		const m = fallbackToObject(transformer_map[scope]);
+		assign((transformer_map[scope] = m), transformers);
+		return result;
 	}
 
 	function withBy(scope) {
 		const rst = {
 			def: (context) => (def(scope, context), rst),
 			set: (context) => (set(scope, context), rst),
-			get: (key) => get(scope, key),
+			get: (key, ...args) => get(scope, key, ...args),
 			getL: (key) => getL(scope, key),
+			gfs: (indices, name, ...args) => gfs(scope, indices, name, ...args),
 		};
 		return rst;
 	}
