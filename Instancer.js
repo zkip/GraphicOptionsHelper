@@ -37,8 +37,8 @@ function makeInstance(name, { ...props } = {}) {
 
 		const effects_map = {};
 
-		console.log(node_map_dynamic);
-		console.log(effects_map);
+		console.log(node_map_dynamic, node_map);
+		// console.log(effects_map);
 
 		const {
 			modifiers,
@@ -184,7 +184,7 @@ function makeInstance(name, { ...props } = {}) {
 
 						if (isNotEmpty($effects)) {
 							const opts = $effects();
-							console.log(opts, "_____");
+							// console.log(opts, "_____");
 							effects_map[solid_path] = $effects;
 						}
 					} else if (self_solid === "@if") {
@@ -196,11 +196,12 @@ function makeInstance(name, { ...props } = {}) {
 					);
 
 					if (isInDynamicContext(solid_path)) {
-						let count = 0;
 						const iteration = resolveToPure(solid_path, self_solid);
 						const {
 							solid_path: iteration_solid_path,
 						} = resolveDynamicContext(solid_path);
+
+						// console.log(iteration_solid_path, "=====");
 
 						// resolve the effect actions
 						const effects = effects_map[iteration_solid_path];
@@ -212,7 +213,7 @@ function makeInstance(name, { ...props } = {}) {
 						}
 
 						iteration((indices, ...args) => {
-							const { $name, ...option } = fallbackToObject(
+							const { $name, ...option } = fallback({})(
 								mutation_action(
 									contextor_mutable,
 									indices,
@@ -223,8 +224,6 @@ function makeInstance(name, { ...props } = {}) {
 								props,
 								...option,
 							});
-
-							count++;
 
 							if (isLogicalSolid(parent_solid)) {
 								const id = genNodePureID(solid_path, indices);
@@ -238,6 +237,8 @@ function makeInstance(name, { ...props } = {}) {
 							const parent_node =
 								node_map[parent_solid_id] ||
 								node_map_dynamic[parent_solid_id];
+
+							// console.log(parent_solid_id, "###", indices);
 
 							mount(parent_node, node.root);
 						});

@@ -122,8 +122,6 @@ function collectIterationsByDownstream(solid_path, iteration_map) {
 function genContextor() {
 	const store = {};
 	const transformer_map = {};
-	const evaluates_map = {};
-	const actions_map = {};
 	const need_update_map = {};
 	const values_cached = {};
 
@@ -209,40 +207,31 @@ function genContextor() {
 		if (isNotEmpty(tfms_scoped)) {
 			const transformer = tfms_scoped[name];
 			if (isNotEmpty(transformer)) {
-				const amm = fallback({})(actions_map[scope]);
-				const emm = fallback({})(evaluates_map[scope]);
-				const nmm = fallback({})(need_update_map[scope]);
+				const need_update = fallback({})(need_update_map[scope]);
 				const vcm = fallback({})(values_cached[scope]);
 
-				if (!(name in amm)) {
-					const [update, get] = cache(transformer);
-					(actions_map[scope] = amm)[name] = update;
-					(evaluates_map[scope] = emm)[name] = get;
-					(need_update_map[scope] = nmm)[name] = true;
+				if (!(name in need_update)) {
+					(need_update_map[scope] = need_update)[name] = true;
 					(values_cached[scope] = vcm)[name] = [];
 				}
 
 				const local_index = last(indices);
+				// new logical node
 				if (!(local_index in vcm[name])) {
-					nmm[name] = true;
+					need_update[name] = true;
 				}
 
-				if (nmm[name]) {
-					vcm[name][local_index] = amm[name](...args);
-					nmm[name] = false;
+				if (need_update[name]) {
+					vcm[name][local_index] = transformer(...args);
+					need_update[name] = false;
 				}
 
-				console.log(values_cached);
-				// console.log(actions_map, evaluates_map, need_update_map);
-				return emm[name]();
-				// return evaluates_map[scope][name]();
-				// return transformer(...args);
+				return vcm[name][local_index];
 			}
 		}
 	}
 
 	function setTransformers(scope, transformers) {
-		console.log(transformer_map, transformers);
 		const m = fallbackToObject(transformer_map[scope]);
 		assign((transformer_map[scope] = m), transformers);
 		return result;
