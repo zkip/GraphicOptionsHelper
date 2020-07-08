@@ -37,16 +37,18 @@ function makeInstance(name, { ...props } = {}) {
 
 		const effects_map = {};
 
-		console.log(node_map_dynamic, node_map);
+		const options_map = {};
+
+		// console.log(node_map_dynamic, node_map);
 		// console.log(effects_map);
 
 		const {
-			modifiers,
-			mutations_effects,
-			mutations_deps,
-			deps,
+			modifiers = {},
+			mutations_effects = {},
+			mutations_deps = {},
+			deps = {},
 			children: mutation_map,
-			variables,
+			variables = {},
 			onCreated = noop,
 			onMounted = noop,
 			onDestroyed = noop,
@@ -64,28 +66,72 @@ function makeInstance(name, { ...props } = {}) {
 			return logical_count_map[parent_solid_path];
 		}
 
-		function resolveToPure(solid_path, self_solid) {
+		function resolveToPure(solid_path, { props }, cached_values) {
+			const {
+				self_solid,
+				parent_solid,
+				parent_solid_path,
+				contextor_mutable,
+				mutation_action,
+				parent_node,
+			} = cached_values;
 			const {
 				context_type,
 				iteration,
 				condition,
 			} = resolveDynamicContext(solid_path);
 
-			// console.log(context_type, iteration, condition, "@@@@@@@@@");
-
 			if (context_type === "condition") {
-				const node = $condition()
-					? genNode(self_solid, node_option)
-					: genNode("&Comment");
-
-				if (isNotEmpty(self_node)) {
-					self_node.replaceWith(node);
-				} else {
-					return node;
+				const result = condition();
+				const { $name, ...option } =
+					mutation_action(contextor_mutable) || {};
+				const node = genNode(result ? self_solid : "&Comment", {
+					props,
+					...option,
+				});
+				node_map[solid_path] = node.root;
+				options_map[solid_path] = { props, ...option };
+				if (isNotEmpty($name)) {
+					refs[$name] = node.root;
 				}
+				mount(parent_node, node.root);
 			} else if (context_type === "iteration") {
-				return iteration;
-			} else if (context_type === "@for") {
+				const mutation_action = mutation_map[solid_path];
+				const {
+					solid_path: iteration_solid_path,
+				} = resolveDynamicContext(solid_path);
+
+				// resolve the effect actions
+				const effects = effects_map[iteration_solid_path];
+				if (isNotEmpty(effects)) {
+					contextor.setTransformers(iteration_solid_path, effects());
+				}
+
+				iteration((indices, ...args) => {
+					const { $name, ...option } = fallback({})(
+						mutation_action(contextor_mutable, indices, ...args)
+					);
+					const node = genNode(self_solid, {
+						props,
+						...option,
+					});
+
+					if (isLogicalSolid(parent_solid)) {
+						const id = genNodePureID(solid_path, indices);
+						node_map_dynamic[id] = node.root;
+					}
+
+					const parent_solid_id = trimToPureEndNode(
+						parent_solid_path,
+						indices
+					);
+					const parent_node =
+						node_map[parent_solid_id] ||
+						node_map_dynamic[parent_solid_id];
+
+					mount(parent_node, node.root);
+				});
+			} else {
 			}
 		}
 
@@ -118,7 +164,11 @@ function makeInstance(name, { ...props } = {}) {
 					const context_type = "condition";
 					const condition = condition_map[path];
 
-					return { context_type, condition };
+					return {
+						context_type,
+						condition,
+						solid_path: nps.join("/"),
+					};
 				} else if (isLogicalSolid(self_solid, "@for")) {
 					const context_type = "iteration";
 					const iteration = iteration_map_stacked[path];
@@ -183,8 +233,6 @@ function makeInstance(name, { ...props } = {}) {
 						);
 
 						if (isNotEmpty($effects)) {
-							const opts = $effects();
-							// console.log(opts, "_____");
 							effects_map[solid_path] = $effects;
 						}
 					} else if (self_solid === "@if") {
@@ -194,54 +242,19 @@ function makeInstance(name, { ...props } = {}) {
 					const contextor_mutable = makeMutable(
 						contextor.withBy(solid_path)
 					);
-
 					if (isInDynamicContext(solid_path)) {
-						const iteration = resolveToPure(solid_path, self_solid);
-						const {
-							solid_path: iteration_solid_path,
-						} = resolveDynamicContext(solid_path);
-
-						// console.log(iteration_solid_path, "=====");
-
-						// resolve the effect actions
-						const effects = effects_map[iteration_solid_path];
-						if (isNotEmpty(effects)) {
-							contextor.setTransformers(
-								iteration_solid_path,
-								effects()
-							);
-						}
-
-						iteration((indices, ...args) => {
-							const { $name, ...option } = fallback({})(
-								mutation_action(
-									contextor_mutable,
-									indices,
-									...args
-								)
-							);
-							const node = genNode(self_solid, {
-								props,
-								...option,
-							});
-
-							if (isLogicalSolid(parent_solid)) {
-								const id = genNodePureID(solid_path, indices);
-								node_map_dynamic[id] = node.root;
-							}
-
-							const parent_solid_id = trimToPureEndNode(
+						resolveToPure(
+							solid_path,
+							{ props },
+							{
+								self_solid,
+								parent_solid,
 								parent_solid_path,
-								indices
-							);
-							const parent_node =
-								node_map[parent_solid_id] ||
-								node_map_dynamic[parent_solid_id];
-
-							// console.log(parent_solid_id, "###", indices);
-
-							mount(parent_node, node.root);
-						});
+								contextor_mutable,
+								mutation_action,
+								parent_node,
+							}
+						);
 					} else {
 						const { $name, ...option } =
 							mutation_action(contextor_mutable) || {};
@@ -252,23 +265,6 @@ function makeInstance(name, { ...props } = {}) {
 						}
 						mount(parent_node, node.root);
 					}
-
-					// if (isLogicalSolid(parent_solid, "@for")) {
-					// 	const iterator = getIteration(parent_solid_path);
-					// 	const options = iterator(mutation_action);
-					// 	const lp = getLogicalPosition(solid_path);
-					// 	const lc = getLogicalCount(parent_solid_path);
-
-					// 	options.map((option, idx) => {
-					// 		const node = genNode(self_solid, option);
-					// 		// node_map[solid_path] = genNode(self_solid).root;
-					// 		mount(parent_node, node.root, idx * lc + lp);
-					// 	});
-					// } else {
-					// 	const node = genNode(self_solid, { props });
-					// 	node_map[solid_path] = node.root;
-					// 	mount(parent_node, node.root);
-					// }
 				}
 			}
 		}
@@ -345,8 +341,12 @@ function makeInstance(name, { ...props } = {}) {
 									);
 								}
 							);
+						} else if (self_solid === "@if") {
+							// console.log(node_map);
+							// console.log("---------", options_map[solid_path]);
 						}
 					} else {
+						if()
 						const node = node_map[solid_path];
 						const mutation_action = mutation_map[solid_path];
 						const option = mutation_action(
@@ -355,8 +355,6 @@ function makeInstance(name, { ...props } = {}) {
 						mapToNode(node, option);
 					}
 				});
-
-				// applyToDOM(mutated_nodes);
 			});
 
 			committer.commits(variables);
@@ -388,8 +386,9 @@ function resolveSpecialSolid(solid_name, { tx = "" } = {}) {
 }
 
 function genNode(solid_name, option = {}) {
+	// console.log(solid_name, isInternalSolid(solid_name));
 	if (isSpecialSolid(solid_name)) {
-		return resolveSpecialSolid(solid_name);
+		return { root: resolveSpecialSolid(solid_name) };
 	} else if (isLogicalSolid(solid_name)) {
 		const root = document.createDocumentFragment();
 		mapToNode(root, option);

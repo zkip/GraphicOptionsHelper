@@ -55,6 +55,7 @@ async function start() {
 	);
 
 	const container = document.querySelector(".container");
+	const cases = container.querySelectorAll(".case");
 
 	buttom_dom.addEventListener("click", async () => {
 		await loadDefintion(nameInput_dom.value);
@@ -69,8 +70,22 @@ async function start() {
 	});
 
 	await loadDefintion("Ground");
-	const preper = makeInstance("Demo2");
-	preper(container);
+	function mountOn(name, target) {
+		try {
+			const prepare = makeInstance(name);
+			prepare(target);
+		} catch (err) {
+			target.classList.add("has-error");
+			target.textContent = err;
+			console.error(err);
+		}
+	}
+	mountOn("Demo2", cases[0]);
+	// mountOn("Demo1", cases[1]);
+	// mountOn("Demo0", cases[2]);
+	// (cases[0]);
+	// makeInstance("Demo1")(cases[1]);
+	// makeInstance("Demo0")(cases[2]);
 }
 
 function app() {

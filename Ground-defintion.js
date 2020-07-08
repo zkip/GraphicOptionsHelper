@@ -1,4 +1,4 @@
-define(function Demo1({ get, set }) {
+define(function Demo0({ get, set }) {
 	const modifiers = {
 		name: ["div/ul/li/label", "div/ul/li/input", "div/ul/li/input$1"],
 		age: ["div/ul/li$1/input", "div/ul/li$1/span"],
@@ -79,23 +79,17 @@ define(function Demo1({ get, set }) {
 	};
 });
 
-define(function Demo2({ get, set }) {
+define(function Demo1({ get, set }) {
 	const modifiers = {
 		count: ["div/span", "div/ul/@for"],
 	};
-
 	const mutations_effects = {};
-
 	const mutations_deps = {};
-
 	const mutations_pure = {};
-
 	const deps = {};
-
 	const variables = {
 		count: 21,
 	};
-
 	const children = {
 		div: noop,
 		"div/span": ({ get }) => ({ tx: get("count") }),
@@ -161,6 +155,42 @@ define(function Demo2({ get, set }) {
 		mutations_effects,
 		mutations_deps,
 		deps,
+		committer,
+	};
+});
+
+define(function Demo2({ get }) {
+	const modifiers = {
+		count: ["div/input", "div/span", "div/container/@if"],
+	};
+	const variables = {
+		count: 2,
+	};
+	const children = {
+		div: () => ({ $name: "Demo3" }),
+		"div/input": ({ set }) => ({
+			$name: "input",
+			"@input": (e) => set("count", e.target.value),
+			value: get("count"),
+		}),
+		"div/span": ({ get }) => ({ tx: get("count") }),
+		"div/div": () => ({ tags: { container: true } }),
+		"div/div/@if": () => ({
+			$condition: (indices, ...args) => get("count") > 3,
+		}),
+		"div/div/@if/span": () => ({ tx: "Yes" }),
+	};
+
+	const committer = genCommitter(modifiers);
+	const [commit] = committer;
+
+	return {
+		onMounted({ input }) {
+			// input.addEventListener("inpute")
+		},
+		modifiers,
+		variables,
+		children,
 		committer,
 	};
 });
