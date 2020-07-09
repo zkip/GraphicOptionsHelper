@@ -188,7 +188,7 @@ function makeInstance(name, { ...props } = {}) {
 			return collect(solid_path);
 		}
 
-		function applyToDOM(mutated_solids = Object.keys(mutation_map)) {
+		function update(mutated_solids = Object.keys(mutation_map)) {
 			for (const solid_path of mutated_solids) {
 				const mutation_action = mutation_map[solid_path];
 
@@ -269,7 +269,7 @@ function makeInstance(name, { ...props } = {}) {
 			}
 		}
 
-		applyToDOM();
+		update();
 
 		onCreated();
 
@@ -307,54 +307,56 @@ function makeInstance(name, { ...props } = {}) {
 					setContext("/", { [variable_name]: value });
 				});
 
-				mutated_nodes.map((solid_path) => {
-					const nps = solid_path.split("/");
-					const isTopNode = nps.length === 1;
-					const [self_solid_literal] = nps.splice(-1);
-					const self_solid = getSolidType(self_solid_literal);
+				update(mutated_nodes);
 
-					if (isLogicalSolid(self_solid)) {
-						if (self_solid === "@for") {
-							const iteration_map_collected = collectIterationsByDownstream(
-								solid_path,
-								iteration_map
-							);
+				// mutated_nodes.map((solid_path) => {
+				// 	const nps = solid_path.split("/");
+				// 	const isTopNode = nps.length === 1;
+				// 	const [self_solid_literal] = nps.splice(-1);
+				// 	const self_solid = getSolidType(self_solid_literal);
 
-							iteration_map_collected.map(
-								([solid_path_iteration, origin_iteration]) => {
-									const mutation_action =
-										mutation_map[solid_path_iteration];
-									const { $iteration } = mutation_action(
-										contextor.withBy(solid_path_iteration)
-									);
-									const reltive_iterations = resolveRelIterations(
-										solid_path_iteration
-									);
-									iteration_map[
-										solid_path_iteration
-									] = $iteration;
-									iteration_map_stacked[
-										solid_path_iteration
-									] = genIterations(
-										...reltive_iterations,
-										$iteration
-									);
-								}
-							);
-						} else if (self_solid === "@if") {
-							// console.log(node_map);
-							// console.log("---------", options_map[solid_path]);
-						}
-					} else {
-						if()
-						const node = node_map[solid_path];
-						const mutation_action = mutation_map[solid_path];
-						const option = mutation_action(
-							contextor.withBy(solid_path)
-						);
-						mapToNode(node, option);
-					}
-				});
+				// 	if (isLogicalSolid(self_solid)) {
+				// 		if (self_solid === "@for") {
+				// 			const iteration_map_collected = collectIterationsByDownstream(
+				// 				solid_path,
+				// 				iteration_map
+				// 			);
+
+				// 			iteration_map_collected.map(
+				// 				([solid_path_iteration, origin_iteration]) => {
+				// 					const mutation_action =
+				// 						mutation_map[solid_path_iteration];
+				// 					const { $iteration } = mutation_action(
+				// 						contextor.withBy(solid_path_iteration)
+				// 					);
+				// 					const reltive_iterations = resolveRelIterations(
+				// 						solid_path_iteration
+				// 					);
+				// 					iteration_map[
+				// 						solid_path_iteration
+				// 					] = $iteration;
+				// 					iteration_map_stacked[
+				// 						solid_path_iteration
+				// 					] = genIterations(
+				// 						...reltive_iterations,
+				// 						$iteration
+				// 					);
+				// 				}
+				// 			);
+				// 		} else if (self_solid === "@if") {
+				// 			// console.log(node_map);
+				// 			// console.log("---------", options_map[solid_path]);
+				// 		}
+				// 	} else {
+				// 		// if()
+				// 		const node = node_map[solid_path];
+				// 		const mutation_action = mutation_map[solid_path];
+				// 		const option = mutation_action(
+				// 			contextor.withBy(solid_path)
+				// 		);
+				// 		mapToNode(node, option);
+				// 	}
+				// });
 			});
 
 			committer.commits(variables);
@@ -386,21 +388,20 @@ function resolveSpecialSolid(solid_name, { tx = "" } = {}) {
 }
 
 function genNode(solid_name, option = {}) {
-	// console.log(solid_name, isInternalSolid(solid_name));
+	let node;
 	if (isSpecialSolid(solid_name)) {
-		return { root: resolveSpecialSolid(solid_name) };
+		node = resolveSpecialSolid(solid_name);
 	} else if (isLogicalSolid(solid_name)) {
-		const root = document.createDocumentFragment();
-		mapToNode(root, option);
-		return { root };
+		node = document.createDocumentFragment();
 	} else if (isInternalSolid(solid_name)) {
-		const root = document.createElement(solid_name);
-		mapToNode(root, option);
-		return { root };
+		node = document.createElement(solid_name);
+		return node;
 	} else {
 		//
-		return makeInstance(solid_name, option.props);
+		return undefined;
 	}
+	mapToNode(node, option);
+	return node;
 }
 
 function mapToNode(node, { tx, tags = {}, props, ...others }) {
