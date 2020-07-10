@@ -85,7 +85,6 @@ define(function Demo1({ get, set }) {
 	};
 	const mutations_effects = {};
 	const mutations_deps = {};
-	const mutations_pure = {};
 	const deps = {};
 	const variables = {
 		count: 21,
@@ -189,15 +188,32 @@ define(function Demo2({ get }) {
 		"div/@for/@if/div": () => ({ tags: { container: true } }),
 		"div/@for/@if/div/span": ({}, [i]) => ({ tx: "Yes" + i }),
 		"div/@for/@if/div/span/@if": ({ get }) => ({
-			$condition: ([i], ...args) => {
-				console.log(i, "======");
-				return false;
-			},
+			$condition: ([i], ...args) => i < 10,
 		}),
-		"div/@for/@if/div/span/@if/span": ({ get }, indices) => ({
+		"div/@for/@if/div/span/@if/@if": ({ get }) => ({
+			$condition: ([i], ...args) => i % 3 !== 1,
+		}),
+		"div/@for/@if/div/span/@if/@if/span": ({ get }, indices) => ({
 			tx: "p" + indices,
 		}),
-		// "div/@for/@if/div/span": ({}, [i]) => ({ tx: "Yes" + i }),
+		"div/@for/@if/div/span/@if/@if/span/@if": ({ get }) => ({
+			$condition: ([i], ...args) => i % 4 !== 3,
+		}),
+		"div/@for/@if/div/span/@if/@if/span/@if/@for": ({ get }, indices) => ({
+			$iteration: ([i], ...args) => {
+				let j = 0;
+				return {
+					condition: () => j < i,
+					defer: () => j++,
+				};
+			},
+		}),
+		"div/@for/@if/div/span/@if/@if/span/@if/@for/div": (
+			{ get },
+			indices
+		) => ({
+			tx: "X" + indices,
+		}),
 	};
 
 	const committer = genCommitter(modifiers);
