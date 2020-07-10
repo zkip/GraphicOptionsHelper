@@ -32,6 +32,7 @@ function makeInstance(name, { ...props } = {}) {
 		const iteration_map = {};
 		const iteration_map_stacked = {};
 		const condition_map = {};
+		const condition_map_stacked = {};
 		const logical_count_map = {};
 		const logical_position_map = {};
 
@@ -155,37 +156,80 @@ function makeInstance(name, { ...props } = {}) {
 			return iterations;
 		}
 
+		function resolveRelConditions(solid_path) {
+			return [];
+		}
+
 		function resolveDynamicContext(solid_path) {
-			const collect = (path) => {
+			const collect = (
+				path,
+				{
+					condition,
+					iteration,
+					solid_path_condition,
+					solid_path_iteration,
+				} = {}
+			) => {
 				const nps = path.split("/");
 				const [self_solid_literal] = nps.splice(-1);
 				const self_solid = getSolidType(self_solid_literal);
 				if (isLogicalSolid(self_solid, "@if", "@else", "@case")) {
-					const context_type = "condition";
-					const condition = condition_map[path];
+					condition = condition_map_stacked[path];
+					solid_path_condition = [...nps, self_solid_literal].join(
+						"/"
+					);
+				}
 
-					return {
-						context_type,
+				if (isLogicalSolid(self_solid, "@for")) {
+					iteration = iteration_map_stacked[path];
+					solid_path_iteration = [...nps, self_solid_literal].join(
+						"/"
+					);
+				}
+
+				if (
+					nps.length > 0 &&
+					(isEmpty(condition) || isEmpty(iteration))
+				) {
+					return collect(nps.join("/"), {
 						condition,
-						solid_path: nps.join("/"),
-					};
-				} else if (isLogicalSolid(self_solid, "@for")) {
-					const context_type = "iteration";
-					const iteration = iteration_map_stacked[path];
-
-					nps.push("@for");
-
-					return {
-						context_type,
 						iteration,
-						solid_path: nps.join("/"),
-					};
+						solid_path_condition,
+						solid_path_iteration,
+					});
 				} else {
-					return collect(nps.join("/"));
+					return {
+						condition,
+						iteration,
+						solid_path_condition,
+						solid_path_iteration,
+					};
 				}
 			};
 
 			return collect(solid_path);
+		}
+
+		function extractLogical(solid_path) {
+			const {
+				condition = noop,
+				iteration,
+				solid_path_condition,
+				solid_path_iteration,
+			} = resolveDynamicContext(solid_path);
+
+			const wrapCondition = (indices) =>
+				condition === noop ? noop : () => condition(indices);
+
+			return (fn) => {
+				if (isNotEmpty(iteration)) {
+					iteration((indices, ...args) =>
+						fn(indices, wrapCondition(indices), ...args)
+					);
+				} else {
+					fn([], wrapCondition([]));
+				}
+			};
 		}
 
 		function update(mutated_solids = Object.keys(mutation_map)) {
@@ -222,13 +266,13 @@ function makeInstance(name, { ...props } = {}) {
 					node_map[solid_path] = parent_node;
 
 					if (self_solid === "@for") {
-						const reltive_iterations = resolveRelIterations(
+						const relative_iterations = resolveRelIterations(
 							solid_path
 						);
 
 						iteration_map[solid_path] = $iteration;
 						iteration_map_stacked[solid_path] = genIterations(
-							...reltive_iterations,
+							...relative_iterations,
 							$iteration
 						);
 
@@ -236,34 +280,80 @@ function makeInstance(name, { ...props } = {}) {
 							effects_map[solid_path] = $effects;
 						}
 					} else if (self_solid === "@if") {
+						const relative_conditions = resolveRelConditions(
+							solid_path
+						);
 						condition_map[solid_path] = $condition;
+						condition_map_stacked[solid_path] = genConditions(
+							...relative_conditions,
+							$condition
+						);
 					}
 				} else {
+					console.log(condition_map_stacked, condition_map);
 					const contextor_mutable = makeMutable(
 						contextor.withBy(solid_path)
 					);
 					if (isInDynamicContext(solid_path)) {
-						resolveToPure(
-							solid_path,
-							{ props },
-							{
-								self_solid,
-								parent_solid,
+						const logical = extractLogical(solid_path);
+						logical((indices, condition, ...args) => {
+							const { $name, ...option } =
+								mutation_action(contextor_mutable, indices) ||
+								{};
+							const parent_solid_id = trimToPureEndNode(
 								parent_solid_path,
-								contextor_mutable,
-								mutation_action,
-								parent_node,
+								indices
+							);
+							const parent_node =
+								node_map[parent_solid_id] ||
+								node_map_dynamic[parent_solid_id];
+
+							let node = genNode(self_solid, {
+								props,
+								...option,
+							});
+
+							if (condition !== noop) {
+								const result = condition();
+								// console.log(
+								// 	result,
+								// 	solid_path,
+								// 	indices,
+								// 	"====="
+								// );
+
+								mount(
+									parent_node,
+									result ? node : genNode("&Comment")
+								);
+							} else {
+								console.log("----------");
 							}
-						);
+
+							const nodeID = genNodePureID(solid_path, indices);
+							node_map_dynamic[nodeID] = node;
+						});
+						// resolveToPure(
+						// 	solid_path,
+						// 	{ props },
+						// 	{
+						// 		self_solid,
+						// 		parent_solid,
+						// 		parent_solid_path,
+						// 		contextor_mutable,
+						// 		mutation_action,
+						// 		parent_node,
+						// 	}
+						// );
 					} else {
 						const { $name, ...option } =
 							mutation_action(contextor_mutable) || {};
 						const node = genNode(self_solid, { props, ...option });
-						node_map[solid_path] = node.root;
+						node_map[solid_path] = node;
 						if (isNotEmpty($name)) {
-							refs[$name] = node.root;
+							refs[$name] = node;
 						}
-						mount(parent_node, node.root);
+						mount(parent_node, node);
 					}
 				}
 			}
@@ -395,7 +485,6 @@ function genNode(solid_name, option = {}) {
 		node = document.createDocumentFragment();
 	} else if (isInternalSolid(solid_name)) {
 		node = document.createElement(solid_name);
-		return node;
 	} else {
 		//
 		return undefined;

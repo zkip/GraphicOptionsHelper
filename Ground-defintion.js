@@ -161,10 +161,10 @@ define(function Demo1({ get, set }) {
 
 define(function Demo2({ get }) {
 	const modifiers = {
-		count: ["div/input", "div/span", "div/container/@if"],
+		count: ["div/input", "div/span", "div/@for/@if"],
 	};
 	const variables = {
-		count: 21,
+		count: 22,
 	};
 	const children = {
 		div: () => ({ $name: "Demo3" }),
@@ -178,16 +178,26 @@ define(function Demo2({ get }) {
 			$iteration: (indices, ...args) => {
 				let i = 0;
 				return {
-					condition: () => i < 3,
+					condition: () => i < get("count"),
 					defer: () => i++,
 				};
 			},
 		}),
 		"div/@for/@if": ({ get }) => ({
-			$condition: (indices, ...args) => get("count") > 3,
+			$condition: ([i], ...args) => i % 2 === 0,
 		}),
 		"div/@for/@if/div": () => ({ tags: { container: true } }),
-		"div/@for/@if/div/span": () => ({ tx: "Yes" }),
+		"div/@for/@if/div/span": ({}, [i]) => ({ tx: "Yes" + i }),
+		"div/@for/@if/div/span/@if": ({ get }) => ({
+			$condition: ([i], ...args) => {
+				console.log(i, "======");
+				return false;
+			},
+		}),
+		"div/@for/@if/div/span/@if/span": ({ get }, indices) => ({
+			tx: "p" + indices,
+		}),
+		// "div/@for/@if/div/span": ({}, [i]) => ({ tx: "Yes" + i }),
 	};
 
 	const committer = genCommitter(modifiers);

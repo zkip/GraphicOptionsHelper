@@ -137,6 +137,20 @@
 				console.log(indices, id, i);
 			});
 		</script> -->
+		<script>
+			const condition = genConditions(
+				(indices, ...args) => {
+					console.log("0*", indices, ...args);
+					return false;
+				},
+				(indices, ...args) => {
+					console.log("1*", indices, ...args);
+					return true;
+				}
+			);
+			const result = condition([0, 0, 1]);
+			console.log(result);
+		</script>
 	</head>
 	<body></body>
 </html>

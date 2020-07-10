@@ -55,7 +55,7 @@ function fallback(back_value) {
 // fallback to object
 const fallbackToObject = fallback({});
 
-function genIterations(...collections) {
+function genIterations(...iterations) {
 	const _ = (fn, ...cs) => {
 		const receipt = cs.pop();
 		const next = ([...indices], ...args) => {
@@ -72,7 +72,21 @@ function genIterations(...collections) {
 		};
 		return cs.length > 0 ? _(next, ...cs) : next([]);
 	};
-	return (fn) => _(fn, ...collections);
+	return (fn) => _(fn, ...iterations);
+}
+
+function genConditions(...conditions) {
+	const _ = (indices, ...cs) => {
+		const fn = cs.shift();
+		const result = !!fn(indices);
+		if (result && cs.length > 0) {
+			return result && _(indices, ...cs);
+		} else {
+			return result;
+		}
+	};
+
+	return (indices) => _(indices, ...conditions);
 }
 
 function genNodePureID(solid_path, indices) {
