@@ -160,7 +160,13 @@ define(function Demo1({ get, set }) {
 
 define(function Demo2({ get }) {
 	const modifiers = {
-		count: ["div/input", "div/span", "div/@for/@if"],
+		count: [
+			"div/input",
+			"div/span",
+			"div/@for",
+			"div/@for/@if",
+			"div/@for/@if/div",
+		],
 	};
 	const variables = {
 		count: 22,

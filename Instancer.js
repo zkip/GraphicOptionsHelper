@@ -24,9 +24,12 @@ function makeInstance(name, { ...props } = {}) {
 		const node_map = {
 			// node_name SolidLiteral: DOM
 		};
+		const node_map_cache_condition = {};
 		const node_map_dynamic = {
 			// node_name SolidLiteral: DOM
 		};
+
+		console.log(node_map_dynamic);
 		const refs = {};
 
 		const iteration_map = {};
@@ -35,6 +38,8 @@ function makeInstance(name, { ...props } = {}) {
 		const condition_map_stacked = {};
 		const logical_count_map = {};
 		const logical_position_map = {};
+
+		let iteration_counts = [];
 
 		const effects_map = {};
 		const options_map = {};
@@ -321,6 +326,8 @@ function makeInstance(name, { ...props } = {}) {
 					);
 					if (isInDynamicContext(solid_path)) {
 						const logical = extractLogical(solid_path);
+						const last_iteration_counts = iteration_counts.slice();
+						let _indices = [];
 						logical((indices, { condition, paths }, ...args) => {
 							const { $name, ...option } =
 								mutation_action(contextor_mutable, indices) ||
@@ -339,19 +346,23 @@ function makeInstance(name, { ...props } = {}) {
 								...option,
 							});
 
+							const nodeID = genNodePureID(solid_path, indices);
+							node_map_dynamic[nodeID] = node;
+
 							if (condition !== noop) {
 								const result = condition();
-								mount(
-									parent_node,
-									result ? node : genNode("&Comment")
-								);
+								const comment = genNode("&Comment");
+								node_map_cache_condition[nodeID] = comment;
+
+								mount(parent_node, result ? node : comment);
 							} else {
 								mount(parent_node, node);
 							}
+							_indices = indices;
 
-							const nodeID = genNodePureID(solid_path, indices);
-							node_map_dynamic[nodeID] = node;
+							iteration_counts = indices;
 						});
+						console.log(solid_path, _indices);
 						// resolveToPure(
 						// 	solid_path,
 						// 	{ props },
@@ -379,7 +390,7 @@ function makeInstance(name, { ...props } = {}) {
 							mount(parent_node, node);
 						} else {
 							const node = node_map[solid_path];
-							mapToNode(node, option);
+							mapToNode(node, option, { except_event: true });
 						}
 					}
 				}
@@ -520,7 +531,11 @@ function genNode(solid_name, option = {}) {
 	return node;
 }
 
-function mapToNode(node, { tx, tags = {}, props, ...others }) {
+function mapToNode(
+	node,
+	{ tx, tags = {}, props, ...others },
+	{ except_event = false } = {}
+) {
 	if (isNotEmpty(tx)) {
 		node.textContent = tx;
 	}
@@ -536,6 +551,7 @@ function mapToNode(node, { tx, tags = {}, props, ...others }) {
 	Object.entries(others).map(([key, value]) => {
 		if (key.startsWith("$")) return;
 		if (key.startsWith("@")) {
+			if (except_event) return;
 			node.addEventListener(key.slice(1), value);
 		} else {
 			if (isJustDirectAssign(node.nodeName, key)) {
