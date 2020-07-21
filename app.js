@@ -81,7 +81,7 @@ async function start() {
 		}
 	}
 	mountOn("Demo2", cases[0]);
-	// mountOn("Demo1", cases[1]);
+	// mountOn("Demo4", cases[1]);
 	// mountOn("Demo0", cases[2]);
 	// (cases[0]);
 	// makeInstance("Demo1")(cases[1]);

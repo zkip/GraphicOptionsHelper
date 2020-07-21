@@ -36,8 +36,11 @@ function makeInstance(name, { ...props } = {}) {
 		const iteration_map_stacked = {};
 		const condition_map = {};
 		const condition_map_stacked = {};
+
 		const logical_count_map = {};
 		const logical_position_map = {};
+
+		const iteration_count_map = {};
 
 		let iteration_counts = [];
 
@@ -321,13 +324,15 @@ function makeInstance(name, { ...props } = {}) {
 						);
 					}
 				} else {
+					// mutation in dynamic context
 					const contextor_mutable = makeMutable(
 						contextor.withBy(solid_path)
 					);
 					if (isInDynamicContext(solid_path)) {
 						const logical = extractLogical(solid_path);
 						const last_iteration_counts = iteration_counts.slice();
-						let _indices = [];
+						const prev_indices = iteration_count_map[solid_path];
+						let indices_last = [];
 						logical((indices, { condition, paths }, ...args) => {
 							const { $name, ...option } =
 								mutation_action(contextor_mutable, indices) ||
@@ -341,28 +346,109 @@ function makeInstance(name, { ...props } = {}) {
 								node_map[parent_solid_id] ||
 								node_map_dynamic[parent_solid_id];
 
-							let node = genNode(self_solid, {
-								props,
-								...option,
-							});
-
 							const nodeID = genNodePureID(solid_path, indices);
-							node_map_dynamic[nodeID] = node;
+
+							const node_is_exsited = nodeID in node_map_dynamic;
+							const comment_is_exsited =
+								nodeID in node_map_cache_condition;
 
 							if (condition !== noop) {
-								const result = condition();
-								const comment = genNode("&Comment");
-								node_map_cache_condition[nodeID] = comment;
+								const ok = condition();
+								let comment = node_map_cache_condition[nodeID];
 
-								mount(parent_node, result ? node : comment);
+								if (ok) {
+									if (comment_is_exsited) {
+										if (node_is_exsited) {
+											comment.replaceWith(
+												node_map_dynamic[nodeID]
+											);
+										}
+										delete node_map_cache_condition[nodeID];
+									} else {
+										// nothing
+									}
+
+									if (node_is_exsited) {
+										// nothing
+									} else {
+										let node = genNode(self_solid, {
+											props,
+											...option,
+										});
+
+										node_map_dynamic[nodeID] = node;
+										if (!comment_is_exsited) {
+											// init true of condition
+											mount(parent_node, node);
+										} else {
+											comment.replaceWith(
+												node_map_dynamic[nodeID]
+											);
+										}
+									}
+								} else {
+									if (comment_is_exsited) {
+										// nothing
+									} else {
+										comment = genNode("&Comment");
+										node_map_cache_condition[
+											nodeID
+										] = comment;
+										if (node_is_exsited) {
+											node_map_dynamic[
+												nodeID
+											].replaceWith(comment);
+										} else {
+											// init false of condition
+											mount(parent_node, comment);
+										}
+									}
+								}
+
+								// if (comment_is_exsited) {
+								// 	if (ok) {
+								// 		comment.replaceWith(node);
+								// 	} else {
+								// 		// nothing
+								// 	}
+								// } else {
+								// 	if (ok) {
+								// 		if (!node_is_exsited) {
+								// 			console.log("----------");
+								// 			let node = genNode(self_solid, {
+								// 				props,
+								// 				...option,
+								// 			});
+
+								// 			node_map_dynamic[nodeID] = node;
+								// 			mount(parent_node, node);
+								// 		} else {
+								// 		}
+								// 	} else {
+								// 		comment = genNode("&Comment");
+								// 		node_map_cache_condition[
+								// 			nodeID
+								// 		] = comment;
+								// 		mount(parent_node, comment);
+								// 	}
+								// }
 							} else {
+								let node = genNode(self_solid, {
+									props,
+									...option,
+								});
+
+								node_map_dynamic[nodeID] = node;
+
 								mount(parent_node, node);
 							}
-							_indices = indices;
+
+							indices_last = indices;
 
 							iteration_counts = indices;
 						});
-						console.log(solid_path, _indices);
+						console.log(prev_indices, indices_last);
+						iteration_count_map[solid_path] = indices_last;
 						// resolveToPure(
 						// 	solid_path,
 						// 	{ props },
@@ -401,7 +487,7 @@ function makeInstance(name, { ...props } = {}) {
 
 		onCreated();
 
-		return (node_parent_pure) => {
+		return (node_parent_raw) => {
 			const clean_committer = committer.listen(({ variables: vars }) => {
 				const mutated_nodes = [];
 				const variables_effected = [];
@@ -493,7 +579,7 @@ function makeInstance(name, { ...props } = {}) {
 				return dep_names.map((dep_name) => getContext("/", dep_name));
 			}
 
-			mount(node_parent_pure, root);
+			mount(node_parent_raw, root);
 			onMounted(refs);
 
 			// clean up

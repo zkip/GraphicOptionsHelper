@@ -235,3 +235,77 @@ define(function Demo2({ get }) {
 		committer,
 	};
 });
+
+// simple mutable condition
+define(function Demo3({ get }) {
+	const modifiers = {
+		count: ["div/@if", "div/input", "div/@if/span"],
+	};
+
+	const variables = {
+		count: 0,
+	};
+
+	const children = {
+		div: noop,
+		"div/input": ({ get, set }) => ({
+			value: get("count"),
+			"@input": (e) => set("count", e.target.value),
+		}),
+		"div/@if": ({ get }) => ({
+			$condition: (indices, ...args) => get("count") > 2,
+		}),
+		"div/@if/span": () => ({ tx: "Hello" }),
+	};
+
+	const committer = genCommitter(modifiers);
+	// const [commit] = committer;
+
+	return {
+		modifiers,
+		variables,
+		children,
+		committer,
+	};
+});
+
+// simple mutable iteration
+define(function Demo4({ get }) {
+	const modifiers = {
+		count: ["div/@for", "div/input", "div/@for/div"],
+	};
+
+	const variables = {
+		count: 5,
+	};
+
+	const children = {
+		div: noop,
+		"div/input": ({ get, set }) => ({
+			value: get("count"),
+			"@input": (e) => set("count", e.target.value),
+		}),
+		"div/@for": ({ get }) => ({
+			$iteration: (indices, ...args) => {
+				let i = 0;
+				return {
+					condition: () => i < get("count"),
+					defer: () => i++,
+				};
+			},
+		}),
+		// "div/@for/div": () => ({ tx: "Hello" }),
+		"div/@for/div": ({}, indices) => ({ tx: indices }),
+		// "div/@for/span/div": () => ({ tx: "Hello" }),
+	};
+
+	const committer = genCommitter(modifiers);
+	// const [commit] = committer;
+
+	return {
+		modifiers,
+		variables,
+		children,
+		committer,
+	};
+});
