@@ -272,7 +272,7 @@ define(function Demo3({ get }) {
 // simple mutable iteration
 define(function Demo4({ get }) {
 	const modifiers = {
-		count: ["div/@for", "div/input", "div/@for/div"],
+		count: ["div/input", "div/@for/div", "div/@for/div/@for/div"],
 	};
 
 	const variables = {
@@ -296,6 +296,17 @@ define(function Demo4({ get }) {
 		}),
 		// "div/@for/div": () => ({ tx: "Hello" }),
 		"div/@for/div": ({}, indices) => ({ tx: indices }),
+		"div/@for/div/@for": ({ get }) => ({
+			$iteration: ([j], ...args) => {
+				let i = 0;
+				return {
+					condition: () => i < j,
+					defer: () => i++,
+				};
+			},
+		}),
+		"div/@for/div/@for/div": ({}, indices) => ({ tx: indices }),
+		"div/@for/div/@for/div/span": ({}, indices) => ({ tx: indices }),
 		// "div/@for/span/div": () => ({ tx: "Hello" }),
 	};
 

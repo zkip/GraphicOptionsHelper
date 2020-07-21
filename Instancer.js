@@ -29,7 +29,7 @@ function makeInstance(name, { ...props } = {}) {
 			// node_name SolidLiteral: DOM
 		};
 
-		console.log(node_map_dynamic);
+		console.log(node_map_dynamic, node_map);
 		const refs = {};
 
 		const iteration_map = {};
@@ -331,9 +331,10 @@ function makeInstance(name, { ...props } = {}) {
 					if (isInDynamicContext(solid_path)) {
 						const logical = extractLogical(solid_path);
 						const last_iteration_counts = iteration_counts.slice();
-						const prev_indices = iteration_count_map[solid_path];
+						const indices_prev = iteration_count_map[solid_path];
 						let indices_last = [];
 						logical((indices, { condition, paths }, ...args) => {
+							// console.log(indices, "$$$");
 							const { $name, ...option } =
 								mutation_action(contextor_mutable, indices) ||
 								{};
@@ -349,6 +350,12 @@ function makeInstance(name, { ...props } = {}) {
 							const nodeID = genNodePureID(solid_path, indices);
 
 							const node_is_exsited = nodeID in node_map_dynamic;
+							// console.log(
+							// 	nodeID,
+							// 	solid_path,
+							// 	"+==",
+							// 	node_is_exsited
+							// );
 							const comment_is_exsited =
 								nodeID in node_map_cache_condition;
 
@@ -404,63 +411,55 @@ function makeInstance(name, { ...props } = {}) {
 										}
 									}
 								}
-
-								// if (comment_is_exsited) {
-								// 	if (ok) {
-								// 		comment.replaceWith(node);
-								// 	} else {
-								// 		// nothing
-								// 	}
-								// } else {
-								// 	if (ok) {
-								// 		if (!node_is_exsited) {
-								// 			console.log("----------");
-								// 			let node = genNode(self_solid, {
-								// 				props,
-								// 				...option,
-								// 			});
-
-								// 			node_map_dynamic[nodeID] = node;
-								// 			mount(parent_node, node);
-								// 		} else {
-								// 		}
-								// 	} else {
-								// 		comment = genNode("&Comment");
-								// 		node_map_cache_condition[
-								// 			nodeID
-								// 		] = comment;
-								// 		mount(parent_node, comment);
-								// 	}
-								// }
 							} else {
-								let node = genNode(self_solid, {
-									props,
-									...option,
-								});
+								if (node_is_exsited) {
+									mapToNode(
+										node_map_dynamic[nodeID],
+										{ ...option },
+										{
+											except_event: true,
+										}
+									);
+								} else {
+									let node = genNode(self_solid, {
+										props,
+										...option,
+									});
 
-								node_map_dynamic[nodeID] = node;
+									node_map_dynamic[nodeID] = node;
 
-								mount(parent_node, node);
+									mount(parent_node, node);
+								}
 							}
 
 							indices_last = indices;
 
 							iteration_counts = indices;
 						});
-						console.log(prev_indices, indices_last);
+						// remove the overflowed nodes
+						// console.log(indices_prev, indices_last);
 						iteration_count_map[solid_path] = indices_last;
-						// resolveToPure(
-						// 	solid_path,
-						// 	{ props },
-						// 	{
-						// 		self_solid,
-						// 		parent_solid,
-						// 		parent_solid_path,
-						// 		contextor_mutable,
-						// 		mutation_action,
-						// 		parent_node,
+
+						// const indices_prev_temp =
+						// 	indices_prev && indices_prev.slice();
+						// for(let p=indices_prev.length-1;p>=0;p--){
+						// 	const index_prev = indices_prev_temp[p];
+						// 	for (let i = index_prev; i > 0; i--) {
+						// 		if (index_prev > index_last) {
+						// 			indices_prev_temp[p] =
+						// 			// unmount
+						// 		}
 						// 	}
-						// );
+						// }
+
+						// indices_prev.map((index_prev, idx) => {
+						// 	const index_last = indices_last[idx];
+						// 	for (let i = index_prev; i > 0; i--) {
+						// 		if (index_prev > index_last) {
+						// 			// unmount
+						// 		}
+						// 	}
+						// });
 					} else {
 						const { $name, ...option } =
 							mutation_action(contextor_mutable) || {};
@@ -595,9 +594,11 @@ function mount(parent, child) {
 	parent.appendChild(child);
 }
 
-function resolveSpecialSolid(solid_name, { tx = "" } = {}) {
+function resolveSpecialSolid(solid_name) {
 	if (isSpecialSolid(solid_name, "&Comment")) {
-		return document.createComment(tx);
+		return document.createComment("");
+	} else if (isSpecialSolid(solid_name, "&Text")) {
+		return document.createTextNode("");
 	}
 }
 
@@ -619,11 +620,22 @@ function genNode(solid_name, option = {}) {
 
 function mapToNode(
 	node,
-	{ tx, tags = {}, props, ...others },
+	{ tx, tags = {}, props, ...others } = {},
 	{ except_event = false } = {}
 ) {
 	if (isNotEmpty(tx)) {
-		node.textContent = tx;
+		// node.textContent = tx;
+		const first_child = node.firstChild;
+		let text_node;
+
+		if (first_child && first_child.nodeName === "#text") {
+			text_node = first_child;
+		} else {
+			text_node = document.createTextNode(tx);
+			node.appendChild(text_node);
+		}
+
+		text_node.replaceData(0, tx.length, tx);
 	}
 
 	Object.entries(tags).map(([key, has]) => {

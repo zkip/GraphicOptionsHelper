@@ -283,6 +283,7 @@ const LOGICALSOLID = {
 
 const SPECIALSOLID = {
 	"&Comment": true,
+	"&Text": true,
 };
 
 function isInternalSolid(solid_name) {
