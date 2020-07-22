@@ -4,6 +4,7 @@ function cache(fn) {
 }
 
 function noop() {}
+const multiply = (a, b) => a * b;
 
 function isEmpty(v) {
 	return typeof v === "undefined";
@@ -54,6 +55,20 @@ function fallback(back_value) {
 
 // fallback to object
 const fallbackToObject = fallback({});
+
+function genFlatEachIndices(fn) {
+	return (...args) => {
+		const count = args.reduce((a, b) => a * b, 1);
+		for (let i = 0; i < count; i++) {
+			indices = args.map((_, idx) => {
+				const all = args.slice(0, idx).reduce(multiply, 1);
+				const part = args.slice(0, idx + 1).reduce(multiply, 1);
+				return ((i % (count / all)) / (count / part)) >> 0;
+			});
+			fn(indices);
+		}
+	};
+}
 
 function genIterations(...iterations) {
 	const _ = (fn, ...cs) => {

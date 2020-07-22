@@ -137,7 +137,7 @@
 				console.log(indices, id, i);
 			});
 		</script> -->
-		<script>
+		<!-- <script>
 			const condition = genConditions(
 				(indices, ...args) => {
 					console.log("0*", indices, ...args);
@@ -150,6 +150,48 @@
 			);
 			const result = condition([0, 0, 1]);
 			console.log(result);
+		</script> -->
+
+		<script>
+			// const multiply = (a, b) => a * b;
+
+			// function genFlatEachIndices(fn) {
+			// 	return (...args) => {
+			// 		const count = args.reduce((a, b) => a * b, 1);
+			// 		for (let i = 0; i < count; i++) {
+			// 			indices = args.map((_, idx) => {
+			// 				const all = args.slice(0, idx).reduce(multiply, 1);
+			// 				const part = args
+			// 					.slice(0, idx + 1)
+			// 					.reduce(multiply, 1);
+			// 				return ((i % (count / all)) / (count / part)) >> 0;
+			// 			});
+			// 			fn(indices);
+			// 		}
+			// 	};
+			// }
+
+			function genFlatDiffIndices(fn) {
+				return (from, to) => {
+					const count = args.reduce((a, b) => a * b, 1);
+					for (let i = 0; i < count; i++) {
+						indices = args.map((_, idx) => {
+							const all = args.slice(0, idx).reduce(multiply, 1);
+							const part = args
+								.slice(0, idx + 1)
+								.reduce(multiply, 1);
+							return ((i % (count / all)) / (count / part)) >> 0;
+						});
+						fn(indices);
+					}
+				};
+			}
+
+			const flatEachIndices = genFlatDiffIndices((indices) => {
+				console.log(indices);
+			});
+			flatEachIndices(4, 2, 2);
+			// flatEachIndices(2, 1, 2);
 		</script>
 	</head>
 	<body></body>

@@ -331,7 +331,8 @@ function makeInstance(name, { ...props } = {}) {
 					if (isInDynamicContext(solid_path)) {
 						const logical = extractLogical(solid_path);
 						const last_iteration_counts = iteration_counts.slice();
-						const indices_prev = iteration_count_map[solid_path];
+						const indices_prev =
+							iteration_count_map[solid_path] || [];
 						let indices_last = [];
 						logical((indices, { condition, paths }, ...args) => {
 							// console.log(indices, "$$$");
@@ -350,12 +351,6 @@ function makeInstance(name, { ...props } = {}) {
 							const nodeID = genNodePureID(solid_path, indices);
 
 							const node_is_exsited = nodeID in node_map_dynamic;
-							// console.log(
-							// 	nodeID,
-							// 	solid_path,
-							// 	"+==",
-							// 	node_is_exsited
-							// );
 							const comment_is_exsited =
 								nodeID in node_map_cache_condition;
 
@@ -437,20 +432,80 @@ function makeInstance(name, { ...props } = {}) {
 							iteration_counts = indices;
 						});
 						// remove the overflowed nodes
-						// console.log(indices_prev, indices_last);
+						console.log(indices_prev, indices_last, solid_path);
 						iteration_count_map[solid_path] = indices_last;
 
+						const diff_indices_raw = indices_prev.map(
+							(n, i) => n - indices_last[i]
+						);
+
+						let not_changed = true;
+						let part_change_m = {};
+						const diff_indices = diff_indices_raw.map((n, idx) => {
+							if (n === 0) {
+								part_change_m[idx] = true;
+								return 1;
+							} else {
+								not_changed = false;
+								return n;
+							}
+						});
+
+						if (!not_changed) {
+							genFlatEachIndices((indices) => {
+								console.log(indices, ">>>>");
+							})(...diff_indices);
+						}
+						console.log(diff_indices, "===", not_changed);
+
 						// const indices_prev_temp =
-						// 	indices_prev && indices_prev.slice();
-						// for(let p=indices_prev.length-1;p>=0;p--){
+						// 	(indices_prev && indices_prev.slice()) || [];
+						// for (
+						// 	let p = indices_prev_temp.length - 1;
+						// 	p >= 0;
+						// 	p--
+						// ) {
 						// 	const index_prev = indices_prev_temp[p];
-						// 	for (let i = index_prev; i > 0; i--) {
-						// 		if (index_prev > index_last) {
-						// 			indices_prev_temp[p] =
+						// 	const index_last = indices_last[p];
+						// 	if (index_prev > index_last) {
+						// 		for (let i = index_prev; i > index_last; i--) {
+						// 			const access_indices = indices_prev_temp.slice();
+						// 			access_indices[p] = i;
+						// 			// console.log(
+						// 			// 	index_prev,
+						// 			// 	solid_path,
+						// 			// 	p,
+						// 			// 	i,
+						// 			// 	"===",
+						// 			// 	access_indices
+						// 			// );
+						// 			const nodeID = genNodePureID(
+						// 				solid_path,
+						// 				access_indices
+						// 			);
+						// 			// console.log(
+						// 			// 	// node_map_dynamic,
+						// 			// 	index_prev,
+						// 			// 	index_last,
+						// 			// 	"==",
+						// 			// 	nodeID,
+						// 			// 	p,
+						// 			// 	i
+						// 			// );
+						// 			const node = node_map_dynamic[nodeID];
+						// 			if (isNotEmpty(node)) {
+						// 				unmount(node);
+						// 				delete node_map_dynamic[nodeID];
+						// 			}
+						// 			// console.log(nodeID, ">>", node);
 						// 			// unmount
 						// 		}
+						// 	} else {
+						// 		console.log(index_prev, index_last, p, "===");
 						// 	}
 						// }
+
+						// console.log(node_map_dynamic, ">>>>>>");
 
 						// indices_prev.map((index_prev, idx) => {
 						// 	const index_last = indices_last[idx];
@@ -594,6 +649,10 @@ function mount(parent, child) {
 	parent.appendChild(child);
 }
 
+function unmount(child) {
+	child.remove();
+}
+
 function resolveSpecialSolid(solid_name) {
 	if (isSpecialSolid(solid_name, "&Comment")) {
 		return document.createComment("");
@@ -628,14 +687,15 @@ function mapToNode(
 		const first_child = node.firstChild;
 		let text_node;
 
-		if (first_child && first_child.nodeName === "#text") {
+		if (first_child && first_child.nodeType === 3) {
 			text_node = first_child;
 		} else {
 			text_node = document.createTextNode(tx);
-			node.appendChild(text_node);
+			node.insertBefore(text_node, node.firstChild || null);
+			// node.appendChild(text_node);
 		}
 
-		text_node.replaceData(0, tx.length, tx);
+		text_node.replaceData(0, text_node.data.length, tx);
 	}
 
 	Object.entries(tags).map(([key, has]) => {
