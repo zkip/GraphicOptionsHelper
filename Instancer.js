@@ -335,7 +335,6 @@ function makeInstance(name, { ...props } = {}) {
 							iteration_count_map[solid_path] || [];
 						let indices_last = [];
 						logical((indices, { condition, paths }, ...args) => {
-							// console.log(indices, "$$$");
 							const { $name, ...option } =
 								mutation_action(contextor_mutable, indices) ||
 								{};
@@ -431,90 +430,29 @@ function makeInstance(name, { ...props } = {}) {
 
 							iteration_counts = indices;
 						});
+
 						// remove the overflowed nodes
-						console.log(indices_prev, indices_last, solid_path);
+						if (indices_last.length === 0) {
+							indices_last = indices_prev.map(() => -1);
+						}
 						iteration_count_map[solid_path] = indices_last;
 
-						const diff_indices_raw = indices_prev.map(
-							(n, i) => n - indices_last[i]
-						);
-
-						let not_changed = true;
-						let part_change_m = {};
-						const diff_indices = diff_indices_raw.map((n, idx) => {
-							if (n === 0) {
-								part_change_m[idx] = true;
-								return 1;
-							} else {
-								not_changed = false;
-								return n;
-							}
-						});
+						let not_changed =
+							indices_prev.toString() === indices_last.toString();
 
 						if (!not_changed) {
-							genFlatEachIndices((indices) => {
-								console.log(indices, ">>>>");
-							})(...diff_indices);
+							console.log(indices_prev, indices_last, "@@@");
+							// console.log(node_map_dynamic);
+							genFlatDiffIndices((indices) => {
+								console.log(indices, "===");
+								let nodeID = genNodePureID(solid_path, indices);
+								const node = node_map_dynamic[nodeID];
+								if (node) {
+									unmount(node);
+									delete node_map_dynamic[nodeID];
+								}
+							})(indices_prev, indices_last);
 						}
-						console.log(diff_indices, "===", not_changed);
-
-						// const indices_prev_temp =
-						// 	(indices_prev && indices_prev.slice()) || [];
-						// for (
-						// 	let p = indices_prev_temp.length - 1;
-						// 	p >= 0;
-						// 	p--
-						// ) {
-						// 	const index_prev = indices_prev_temp[p];
-						// 	const index_last = indices_last[p];
-						// 	if (index_prev > index_last) {
-						// 		for (let i = index_prev; i > index_last; i--) {
-						// 			const access_indices = indices_prev_temp.slice();
-						// 			access_indices[p] = i;
-						// 			// console.log(
-						// 			// 	index_prev,
-						// 			// 	solid_path,
-						// 			// 	p,
-						// 			// 	i,
-						// 			// 	"===",
-						// 			// 	access_indices
-						// 			// );
-						// 			const nodeID = genNodePureID(
-						// 				solid_path,
-						// 				access_indices
-						// 			);
-						// 			// console.log(
-						// 			// 	// node_map_dynamic,
-						// 			// 	index_prev,
-						// 			// 	index_last,
-						// 			// 	"==",
-						// 			// 	nodeID,
-						// 			// 	p,
-						// 			// 	i
-						// 			// );
-						// 			const node = node_map_dynamic[nodeID];
-						// 			if (isNotEmpty(node)) {
-						// 				unmount(node);
-						// 				delete node_map_dynamic[nodeID];
-						// 			}
-						// 			// console.log(nodeID, ">>", node);
-						// 			// unmount
-						// 		}
-						// 	} else {
-						// 		console.log(index_prev, index_last, p, "===");
-						// 	}
-						// }
-
-						// console.log(node_map_dynamic, ">>>>>>");
-
-						// indices_prev.map((index_prev, idx) => {
-						// 	const index_last = indices_last[idx];
-						// 	for (let i = index_prev; i > 0; i--) {
-						// 		if (index_prev > index_last) {
-						// 			// unmount
-						// 		}
-						// 	}
-						// });
 					} else {
 						const { $name, ...option } =
 							mutation_action(contextor_mutable) || {};

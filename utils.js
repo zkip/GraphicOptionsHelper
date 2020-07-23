@@ -70,6 +70,10 @@ function genFlatEachIndices(fn) {
 	};
 }
 
+function genFlatDiffIndices(fn) {
+	return genFlatDiffIndicesR(fn);
+}
+
 function genIterations(...iterations) {
 	const _ = (fn, ...cs) => {
 		const receipt = cs.pop();

@@ -5,6 +5,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Document</title>
 		<script src="utils.js"></script>
+		<script src="genFlatDiffIndicesR.js"></script>
 		<!-- <script>
 			let items = ["a", "b", "c", "d"];
 			let items2 = ["1", "2", "3", "4"];
@@ -173,7 +174,22 @@
 
 			function genFlatDiffIndices(fn) {
 				return (from, to) => {
-					const count = args.reduce((a, b) => a * b, 1);
+					const { length } = from;
+					const sides = new Array(length + 1);
+
+					const diff = from.map((n, idx) => n - to[idx]);
+
+					let score = 1;
+					for (let i = 0; i < length + 1; i++) {
+						sides[i] = score;
+						score *= from[i];
+					}
+
+					const count = diff.reduce(
+						(a, b, idx) => a + b * sides[idx],
+						1
+					);
+
 					for (let i = 0; i < count; i++) {
 						indices = args.map((_, idx) => {
 							const all = args.slice(0, idx).reduce(multiply, 1);
@@ -187,10 +203,12 @@
 				};
 			}
 
-			const flatEachIndices = genFlatDiffIndices((indices) => {
+			let count = 0;
+			const flatDiffIndices = genFlatDiffIndicesR((indices) => {
 				console.log(indices);
 			});
-			flatEachIndices(4, 2, 2);
+			// flatDiffIndices([4, 3], [1, 0]);
+			flatDiffIndices([4, 5], [4, 1]);
 			// flatEachIndices(2, 1, 2);
 		</script>
 	</head>

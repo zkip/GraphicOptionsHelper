@@ -276,12 +276,14 @@ define(function Demo4({ get }) {
 			"div/input",
 			"div/@for/div",
 			"div/@for/div/@for/div",
-			// "div/@for/div/@for/div/span",
+			"div/@for/div/@for/div/span",
 		],
+		count_a: ["div/@for/div/@for/div", "div/@for/div/@for/div/span"],
 	};
 
 	const variables = {
 		count: 5,
+		count_a: 2,
 	};
 
 	const children = {
@@ -289,6 +291,10 @@ define(function Demo4({ get }) {
 		"div/input": ({ get, set }) => ({
 			value: get("count"),
 			"@input": (e) => set("count", e.target.value),
+		}),
+		"div/input$2": ({ get, set }) => ({
+			value: get("count_a"),
+			"@input": (e) => set("count_a", e.target.value),
 		}),
 		"div/@for": ({ get }) => ({
 			$iteration: (indices, ...args) => {
@@ -305,13 +311,13 @@ define(function Demo4({ get }) {
 			$iteration: ([j], ...args) => {
 				let i = 0;
 				return {
-					condition: () => i < j,
+					condition: () => i < get("count_a"),
 					defer: () => i++,
 				};
 			},
 		}),
 		"div/@for/div/@for/div": ({}, indices) => ({ tx: indices }),
-		// "div/@for/div/@for/div/span": ({}, indices) => ({ tx: indices }),
+		"div/@for/div/@for/div/span": ({}, indices) => ({ tx: indices }),
 		// "div/@for/span/div": () => ({ tx: "Hello" }),
 	};
 
