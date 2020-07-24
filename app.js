@@ -80,9 +80,11 @@ async function start() {
 			console.error(err);
 		}
 	}
+	// mountOn("Demo4", cases[0]);
+	// mountOn("Demo0", cases[0]);
+	// mountOn("Demo1", cases[1]);
+	// mountOn("Demo2", cases[2]);
 	mountOn("Demo4", cases[0]);
-	// mountOn("Demo4", cases[1]);
-	// mountOn("Demo0", cases[2]);
 	// (cases[0]);
 	// makeInstance("Demo1")(cases[1]);
 	// makeInstance("Demo0")(cases[2]);

@@ -143,6 +143,8 @@ function makeInstance(name, { ...props } = {}) {
 			}
 		}
 
+		function isIgnore(solid_path, indices) {}
+
 		function resolveRelIterations(solid_path) {
 			const iterations = [];
 			const collect = (path) => {
@@ -295,7 +297,7 @@ function makeInstance(name, { ...props } = {}) {
 						...option
 					} = mutation_action(contextor.withBy(solid_path));
 
-					node_map[solid_path] = parent_node;
+					// node_map[solid_path] = parent_node;
 
 					if (self_solid === "@for") {
 						const relative_iterations = resolveRelIterations(
@@ -391,18 +393,23 @@ function makeInstance(name, { ...props } = {}) {
 									if (comment_is_exsited) {
 										// nothing
 									} else {
-										comment = genNode("&Comment");
-										node_map_cache_condition[
-											nodeID
-										] = comment;
-										if (node_is_exsited) {
-											node_map_dynamic[
+										// if (!isIgnore(parent_solid_id)) {
+										// console.log(parent_node, ">>>");
+										if (isNotEmpty(parent_node)) {
+											comment = genNode("&Comment");
+											node_map_cache_condition[
 												nodeID
-											].replaceWith(comment);
-										} else {
-											// init false of condition
-											mount(parent_node, comment);
+											] = comment;
+											if (node_is_exsited) {
+												node_map_dynamic[
+													nodeID
+												].replaceWith(comment);
+											} else {
+												// init false of condition
+												mount(parent_node, comment);
+											}
 										}
+										// }
 									}
 								}
 							} else {
@@ -441,17 +448,17 @@ function makeInstance(name, { ...props } = {}) {
 							indices_prev.toString() === indices_last.toString();
 
 						if (!not_changed) {
-							console.log(indices_prev, indices_last, "@@@");
-							// console.log(node_map_dynamic);
 							genFlatDiffIndices((indices) => {
-								console.log(indices, "===");
 								let nodeID = genNodePureID(solid_path, indices);
 								const node = node_map_dynamic[nodeID];
 								if (node) {
 									unmount(node);
 									delete node_map_dynamic[nodeID];
 								}
-							})(indices_prev, indices_last);
+							})(
+								indices_prev.map(addOne),
+								indices_last.map(addOne)
+							);
 						}
 					} else {
 						const { $name, ...option } =

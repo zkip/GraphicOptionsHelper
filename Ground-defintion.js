@@ -81,7 +81,13 @@ define(function Demo0({ get, set }) {
 
 define(function Demo1({ get, set }) {
 	const modifiers = {
-		count: ["div/span", "div/ul/@for"],
+		count: [
+			"div/span",
+			"div/ul",
+			"div/ul/@for/li",
+			"div/ul/@for/li/@for/span",
+			"div/ul/@for/li/@for/span/span",
+		],
 	};
 	const mutations_effects = {};
 	const mutations_deps = {};
@@ -145,7 +151,7 @@ define(function Demo1({ get, set }) {
 		},
 		onMounted({}) {
 			addEventListener("click", () => {
-				commit("count", (Math.random() * 3) >> 0);
+				commit("count", (Math.random() * 22) >> 0);
 			});
 		},
 		variables,
@@ -163,9 +169,10 @@ define(function Demo2({ get }) {
 		count: [
 			"div/input",
 			"div/span",
-			"div/@for",
-			"div/@for/@if",
 			"div/@for/@if/div",
+			"div/@for/@if/div/span",
+			"div/@for/@if/div/span/@if/@if/span",
+			"div/@for/@if/div/span/@if/@if/span/@if/@for/div",
 		],
 	};
 	const variables = {

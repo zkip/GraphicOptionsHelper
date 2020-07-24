@@ -5,6 +5,8 @@ function cache(fn) {
 
 function noop() {}
 const multiply = (a, b) => a * b;
+const addOne = (v) => v + 1;
+const addN = (n) => (v) => v + n;
 
 function isEmpty(v) {
 	return typeof v === "undefined";
