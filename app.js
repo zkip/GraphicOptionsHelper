@@ -70,10 +70,10 @@ async function start() {
 	});
 
 	await loadDefintion("Ground");
-	function mountOn(name, target) {
+	function mountOn(name, target, { ...props } = {}) {
 		try {
-			const prepare = makeInstance(name);
-			prepare(target);
+			const { mount, committer } = makeInstance(name, props);
+			mount(target);
 		} catch (err) {
 			target.classList.add("has-error");
 			target.textContent = err;
@@ -81,10 +81,11 @@ async function start() {
 		}
 	}
 	// mountOn("Demo4", cases[0]);
-	// mountOn("Demo0", cases[0]);
+	// mountOn("List", cases[1], { name: "SDFJJ" });
 	// mountOn("Demo1", cases[1]);
 	// mountOn("Demo2", cases[2]);
-	mountOn("Demo4", cases[0]);
+	// mountOn("Demo4", cases[0]);
+	mountOn("Demo5", cases[0]);
 	// (cases[0]);
 	// makeInstance("Demo1")(cases[1]);
 	// makeInstance("Demo0")(cases[2]);

@@ -338,3 +338,67 @@ define(function Demo4({ get }) {
 		committer,
 	};
 });
+
+define(function List({ get }) {
+	const variables = { name: "", count: 3 };
+	const modifiers = {
+		name: ["div"],
+		count: ["div/div/@for/span"],
+	};
+	return {
+		variables,
+		modifiers,
+		children: {
+			div: ({ get }) => ({ tx: "Hello, " + get("name") }),
+			"div/div": ({ get }) => ({ tags: { container: true } }),
+			"div/div/@for": ({ get }) => ({
+				$iteration: () => {
+					let i = 0;
+					return {
+						condition: () => i < get("count"),
+						defer: () => i++,
+					};
+				},
+			}),
+			"div/div/@for/span": ({}, [i]) => ({ tx: i }),
+		},
+	};
+});
+
+// embed components
+define(function Demo5({ get }) {
+	const modifiers = {
+		name: [
+			// "div/input",
+			"div/span",
+			"div/@if/List",
+		],
+		count: ["div/input", "div/span", "div/@if/div", "div/@if/List"],
+	};
+
+	const variables = {
+		name: "Uoop",
+		count: 2,
+	};
+
+	const children = {
+		div: () => ({ tags: { Demo5: true } }),
+		"div/input": ({ set, get }) => ({
+			value: get("count"),
+			"@input": (e) => set("count", e.target.value),
+		}),
+		"div/span": ({ get }) => ({ tx: get("count") }),
+		"div/@if": ({ get }) => ({ $condition: () => get("count") < 7 }),
+		"div/@if/div": ({ get }) => ({ tx: "SD" + get("count") }),
+		"div/@if/List": ({ get }) => ({
+			name: get("name"),
+			count: get("count"),
+		}),
+	};
+
+	return {
+		variables,
+		modifiers,
+		children,
+	};
+});

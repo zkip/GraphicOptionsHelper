@@ -5,51 +5,8 @@ function makeInstance(name, { ...props } = {}) {
 		const contextor = genContextor();
 		const [getContext, setContext, defContext] = contextor;
 
-		const makeMutable = (contextor) => {
-			const set = (...args) => {
-				const result = contextor.set(...args);
-				committer.commit(...args);
-				// console.log("From Instancer", args);
-				return result;
-			};
-
-			return { ...contextor, set };
-		};
-
-		// Lifecycle:init
+		// lifecycle: init
 		const tail = cstor(contextor.withBy("/"));
-
-		const root = document.createDocumentFragment();
-		const node_mutation_snapshot = {};
-		const node_map = {
-			// node_name SolidLiteral: DOM
-		};
-		const node_map_cache_condition = {};
-		const node_map_dynamic = {
-			// node_name SolidLiteral: DOM
-		};
-
-		console.log(node_map_dynamic, node_map);
-		const refs = {};
-
-		const iteration_map = {};
-		const iteration_map_stacked = {};
-		const condition_map = {};
-		const condition_map_stacked = {};
-
-		const logical_count_map = {};
-		const logical_position_map = {};
-
-		const iteration_count_map = {};
-
-		let iteration_counts = [];
-
-		const effects_map = {};
-		const options_map = {};
-
-		// console.log(node_map_dynamic, node_map);
-		// console.log(effects_map);
-
 		const {
 			modifiers = {},
 			mutations_effects = {},
@@ -60,90 +17,49 @@ function makeInstance(name, { ...props } = {}) {
 			onCreated = noop,
 			onMounted = noop,
 			onDestroyed = noop,
-			committer,
+			committer = genCommitter(modifiers),
 		} = tail;
+
+		const makeMutable = (contextor) => {
+			const set = (...args) => {
+				const result = contextor.set(...args);
+				committer.commit(...args);
+				return result;
+			};
+
+			return { ...contextor, set };
+		};
+
+		const root = document.createDocumentFragment();
+		const node_map = {
+			// node_name SolidLiteral: DOM
+		};
+		const node_map_cache_condition = {};
+		const node_map_dynamic = {
+			// node_name SolidLiteral: DOM
+		};
+
+		const refs = {};
+
+		const iteration_map = {};
+		const iteration_map_stacked = {};
+		const condition_map = {};
+		const condition_map_stacked = {};
+
+		const instance_map = {};
+		const instance_map_dynamic = {};
+
+		const logical_count_map = {};
+		const logical_position_map = {};
+
+		const iteration_count_map = {};
+
+		let iteration_counts = [];
+
+		const effects_map = {};
 
 		defContext("/", variables);
 		defContext("/", deps);
-
-		function getLogicalPosition(solid_path) {
-			return logical_position_map[solid_path];
-		}
-
-		function getLogicalCount(parent_solid_path) {
-			return logical_count_map[parent_solid_path];
-		}
-
-		function resolveToPure(solid_path, { props }, cached_values) {
-			const {
-				self_solid,
-				parent_solid,
-				parent_solid_path,
-				contextor_mutable,
-				mutation_action,
-				parent_node,
-			} = cached_values;
-			const {
-				context_type,
-				iteration,
-				condition,
-			} = resolveDynamicContext(solid_path);
-
-			if (context_type === "condition") {
-				const result = condition();
-				const { $name, ...option } =
-					mutation_action(contextor_mutable) || {};
-				const node = genNode(result ? self_solid : "&Comment", {
-					props,
-					...option,
-				});
-				node_map[solid_path] = node.root;
-				options_map[solid_path] = { props, ...option };
-				if (isNotEmpty($name)) {
-					refs[$name] = node.root;
-				}
-				mount(parent_node, node.root);
-			} else if (context_type === "iteration") {
-				const mutation_action = mutation_map[solid_path];
-				const {
-					solid_path: iteration_solid_path,
-				} = resolveDynamicContext(solid_path);
-
-				// resolve the effect actions
-				const effects = effects_map[iteration_solid_path];
-				if (isNotEmpty(effects)) {
-					contextor.setTransformers(iteration_solid_path, effects());
-				}
-
-				iteration((indices, ...args) => {
-					const { $name, ...option } = fallback({})(
-						mutation_action(contextor_mutable, indices, ...args)
-					);
-					const node = genNode(self_solid, {
-						props,
-						...option,
-					});
-
-					if (isLogicalSolid(parent_solid)) {
-						const id = genNodePureID(solid_path, indices);
-						node_map_dynamic[id] = node.root;
-					}
-
-					const parent_solid_id = trimToPureEndNode(
-						parent_solid_path,
-						indices
-					);
-					const parent_node =
-						node_map[parent_solid_id] ||
-						node_map_dynamic[parent_solid_id];
-
-					mount(parent_node, node.root);
-				});
-			} else {
-			}
-		}
-
-		function isIgnore(solid_path, indices) {}
 
 		function resolveRelIterations(solid_path) {
 			const iterations = [];
@@ -263,6 +179,33 @@ function makeInstance(name, { ...props } = {}) {
 			};
 		}
 
+		function applyProperty(
+			solid_path,
+			option,
+			{ except_event = false } = {}
+		) {
+			if (isInternalSolid(solid_path)) {
+			}
+			const { variables, committer } = ins;
+			Object.entries(option).map(([key, value]) => {
+				if (key.startsWith("$")) return;
+				if (key.startsWith("@")) {
+					if (except_event) return;
+					node.addEventListener(key.slice(1), value);
+				} else {
+					if (key in variables) {
+						committer.commit(key, value);
+					} else {
+						if (isJustDirectAssign(node.nodeName, key)) {
+							node[key] = value;
+						} else {
+							node.setAttribute(key, value);
+						}
+					}
+				}
+			});
+		}
+
 		function update(
 			mutated_solids = Object.keys(mutation_map),
 			is_init = false
@@ -332,11 +275,10 @@ function makeInstance(name, { ...props } = {}) {
 					);
 					if (isInDynamicContext(solid_path)) {
 						const logical = extractLogical(solid_path);
-						const last_iteration_counts = iteration_counts.slice();
 						const indices_prev =
 							iteration_count_map[solid_path] || [];
 						let indices_last = [];
-						logical((indices, { condition, paths }, ...args) => {
+						logical((indices, { condition }, ...args) => {
 							const { $name, ...option } =
 								mutation_action(contextor_mutable, indices) ||
 								{};
@@ -351,7 +293,12 @@ function makeInstance(name, { ...props } = {}) {
 
 							const nodeID = genNodePureID(solid_path, indices);
 
-							const node_is_exsited = nodeID in node_map_dynamic;
+							const node_exsited_internal =
+								nodeID in node_map_dynamic;
+							const node_exsited_custom =
+								nodeID in instance_map_dynamic;
+							const node_is_exsited =
+								node_exsited_internal || node_exsited_custom;
 							const comment_is_exsited =
 								nodeID in node_map_cache_condition;
 
@@ -362,9 +309,11 @@ function makeInstance(name, { ...props } = {}) {
 								if (ok) {
 									if (comment_is_exsited) {
 										if (node_is_exsited) {
-											comment.replaceWith(
-												node_map_dynamic[nodeID]
-											);
+											const node = node_exsited_internal
+												? node_map_dynamic[nodeID]
+												: instance_map_dynamic[nodeID]
+														.root;
+											comment.replaceWith(node);
 										}
 										delete node_map_cache_condition[nodeID];
 									} else {
@@ -372,49 +321,85 @@ function makeInstance(name, { ...props } = {}) {
 									}
 
 									if (node_is_exsited) {
-										// nothing
+										// rebind data to DOM
+										if (node_exsited_internal) {
+											applyToDOM(
+												node_map_dynamic[nodeID],
+												{ ...option },
+												{
+													except_event: true,
+												}
+											);
+										}
+										if (node_exsited_custom) {
+											const {
+												committer,
+											} = instance_map_dynamic[nodeID];
+											committer.commits(option);
+										}
 									} else {
-										let node = genNode(self_solid, {
-											props,
+										let {
+											node,
+											is_internal,
+											mount,
+											raw,
+										} = genNode(self_solid, {
+											...props,
 											...option,
 										});
 
-										node_map_dynamic[nodeID] = node;
 										if (!comment_is_exsited) {
+											if (is_internal) {
+												node_map_dynamic[nodeID] = node;
+											} else {
+												instance_map_dynamic[
+													nodeID
+												] = node;
+											}
 											// init true of condition
-											mount(parent_node, node);
+											mount(parent_node);
 										} else {
-											comment.replaceWith(
-												node_map_dynamic[nodeID]
-											);
+											if (is_internal) {
+												comment.replaceWith(
+													node_map_dynamic[nodeID]
+												);
+											} else {
+												comment.replaceWith(raw);
+											}
 										}
 									}
 								} else {
 									if (comment_is_exsited) {
 										// nothing
 									} else {
-										// if (!isIgnore(parent_solid_id)) {
-										// console.log(parent_node, ">>>");
 										if (isNotEmpty(parent_node)) {
-											comment = genNode("&Comment");
+											const { node } = genNode(
+												"&Comment"
+											);
+											comment = node;
 											node_map_cache_condition[
 												nodeID
 											] = comment;
 											if (node_is_exsited) {
-												node_map_dynamic[
-													nodeID
-												].replaceWith(comment);
+												const exsited_one = node_exsited_internal
+													? node_map_dynamic[nodeID]
+													: instance_map_dynamic[
+															nodeID
+													  ];
+
+												exsited_one.replaceWith(
+													comment
+												);
 											} else {
 												// init false of condition
 												mount(parent_node, comment);
 											}
 										}
-										// }
 									}
 								}
 							} else {
 								if (node_is_exsited) {
-									mapToNode(
+									applyToDOM(
 										node_map_dynamic[nodeID],
 										{ ...option },
 										{
@@ -422,14 +407,21 @@ function makeInstance(name, { ...props } = {}) {
 										}
 									);
 								} else {
-									let node = genNode(self_solid, {
-										props,
-										...option,
-									});
+									let { node, is_internal, mount } = genNode(
+										self_solid,
+										{
+											...props,
+											...option,
+										}
+									);
 
-									node_map_dynamic[nodeID] = node;
+									if (is_internal) {
+										node_map_dynamic[nodeID] = node;
+									} else {
+										instance_map_dynamic[nodeID] = node;
+									}
 
-									mount(parent_node, node);
+									mount(parent_node);
 								}
 							}
 
@@ -464,18 +456,34 @@ function makeInstance(name, { ...props } = {}) {
 						const { $name, ...option } =
 							mutation_action(contextor_mutable) || {};
 						if (is_init) {
-							const node = genNode(self_solid, {
-								props,
-								...option,
-							});
-							node_map[solid_path] = node;
-							if (isNotEmpty($name)) {
-								refs[$name] = node;
+							const { node, is_internal, mount } = genNode(
+								self_solid,
+								{
+									...props,
+									...option,
+								}
+							);
+							if (is_internal) {
+								node_map[solid_path] = node;
+								if (isNotEmpty($name)) {
+									refs[$name] = node;
+								}
+							} else {
+								instance_map[solid_path] = node;
 							}
-							mount(parent_node, node);
+							mount(parent_node);
 						} else {
-							const node = node_map[solid_path];
-							mapToNode(node, option, { except_event: true });
+							const is_internal = solid_path in node_map;
+
+							if (is_internal) {
+								const node = node_map[solid_path];
+								applyToDOM(node, option, {
+									except_event: true,
+								});
+							} else {
+								const node = instance_map[solid_path];
+								node.committer.commits(option);
+							}
 						}
 					}
 				}
@@ -486,106 +494,91 @@ function makeInstance(name, { ...props } = {}) {
 
 		onCreated();
 
-		return (node_parent_raw) => {
-			const clean_committer = committer.listen(({ variables: vars }) => {
-				const mutated_nodes = [];
-				const variables_effected = [];
-				setContext("/", vars);
-				Object.entries(vars).map(([variable_name]) => {
-					const ens = modifiers[variable_name];
-					if (isNotEmpty(ens)) {
-						mutated_nodes.push(...ens);
-					}
+		const top_DOM_backup = [];
 
-					if (variable_name in mutations_effects) {
-						const effected = mutations_effects[variable_name];
-						variables_effected.push(...effected);
+		return {
+			committer,
+			root,
+			replaceWith(DOM) {
+				if (top_DOM_backup.length > 0) {
+					const first_child = top_DOM_backup[0];
 
-						// resolve the effected nodes by the dependent variables
-						effected.map((variable_name) => {
+					first_child.replaceWith(DOM);
+
+					top_DOM_backup.map((el) => {
+						root.appendChild(el);
+					});
+				}
+			},
+			unmount() {
+				top_DOM_backup.map((el) => {
+					root.appendChild(el);
+				});
+				console.log(top_DOM_backup);
+			},
+			mount(node_parent_raw) {
+				const clean_committer = committer.listen(
+					({ variables: vars }) => {
+						const mutated_nodes = [];
+						const variables_effected = [];
+						setContext("/", vars);
+						Object.entries(vars).map(([variable_name]) => {
 							const ens = modifiers[variable_name];
 							if (isNotEmpty(ens)) {
 								mutated_nodes.push(...ens);
 							}
+
+							if (variable_name in mutations_effects) {
+								const effected =
+									mutations_effects[variable_name];
+								variables_effected.push(...effected);
+
+								// resolve the effected nodes by the dependent variables
+								effected.map((variable_name) => {
+									const ens = modifiers[variable_name];
+									if (isNotEmpty(ens)) {
+										mutated_nodes.push(...ens);
+									}
+								});
+							}
 						});
+
+						// update the dependent variables
+						variables_effected.map((variable_name) => {
+							const deps_names = mutations_deps[variable_name];
+							const mutation_action = deps[variable_name];
+							const dep_values = evaluate(...deps_names);
+							const value = mutation_action(...dep_values);
+							setContext("/", { [variable_name]: value });
+						});
+
+						update(mutated_nodes);
 					}
-				});
+				);
 
-				// update the dependent variables
-				variables_effected.map((variable_name) => {
-					const deps_names = mutations_deps[variable_name];
-					const mutation_action = deps[variable_name];
-					const dep_values = evaluate(...deps_names);
-					const value = mutation_action(...dep_values);
-					setContext("/", { [variable_name]: value });
-				});
+				committer.commits(variables);
+				committer.commits(props);
 
-				update(mutated_nodes);
+				function evaluate(...dep_names) {
+					return dep_names.map((dep_name) =>
+						getContext("/", dep_name)
+					);
+				}
 
-				// mutated_nodes.map((solid_path) => {
-				// 	const nps = solid_path.split("/");
-				// 	const isTopNode = nps.length === 1;
-				// 	const [self_solid_literal] = nps.splice(-1);
-				// 	const self_solid = getSolidType(self_solid_literal);
+				for (let i = 0; i < root.children.length; i++) {
+					const el = root.children[i];
+					top_DOM_backup.push(el);
+				}
 
-				// 	if (isLogicalSolid(self_solid)) {
-				// 		if (self_solid === "@for") {
-				// 			const iteration_map_collected = collectIterationsByDownstream(
-				// 				solid_path,
-				// 				iteration_map
-				// 			);
+				mount(node_parent_raw, root);
+				onMounted(refs);
 
-				// 			iteration_map_collected.map(
-				// 				([solid_path_iteration, origin_iteration]) => {
-				// 					const mutation_action =
-				// 						mutation_map[solid_path_iteration];
-				// 					const { $iteration } = mutation_action(
-				// 						contextor.withBy(solid_path_iteration)
-				// 					);
-				// 					const reltive_iterations = resolveRelIterations(
-				// 						solid_path_iteration
-				// 					);
-				// 					iteration_map[
-				// 						solid_path_iteration
-				// 					] = $iteration;
-				// 					iteration_map_stacked[
-				// 						solid_path_iteration
-				// 					] = genIterations(
-				// 						...reltive_iterations,
-				// 						$iteration
-				// 					);
-				// 				}
-				// 			);
-				// 		} else if (self_solid === "@if") {
-				// 			// console.log(node_map);
-				// 			// console.log("---------", options_map[solid_path]);
-				// 		}
-				// 	} else {
-				// 		// if()
-				// 		const node = node_map[solid_path];
-				// 		const mutation_action = mutation_map[solid_path];
-				// 		const option = mutation_action(
-				// 			contextor.withBy(solid_path)
-				// 		);
-				// 		mapToNode(node, option);
-				// 	}
-				// });
-			});
-
-			committer.commits(variables);
-
-			function evaluate(...dep_names) {
-				return dep_names.map((dep_name) => getContext("/", dep_name));
-			}
-
-			mount(node_parent_raw, root);
-			onMounted(refs);
-
-			// clean up
-			return () => {
-				onDestroyed();
-				clean_committer();
-			};
+				// clean up
+				return () => {
+					onDestroyed();
+					clean_committer();
+				};
+			},
 		};
 	}
 }
@@ -607,28 +600,46 @@ function resolveSpecialSolid(solid_name) {
 }
 
 function genNode(solid_name, option = {}) {
-	let node;
+	let node,
+		raw,
+		is_internal = true,
+		mount_l = (parent_node) => mount(parent_node, node);
 	if (isSpecialSolid(solid_name)) {
-		node = resolveSpecialSolid(solid_name);
+		raw = node = resolveSpecialSolid(solid_name);
 	} else if (isLogicalSolid(solid_name)) {
-		node = document.createDocumentFragment();
+		raw = node = document.createDocumentFragment();
 	} else if (isInternalSolid(solid_name)) {
-		node = document.createElement(solid_name);
+		raw = node = document.createElement(solid_name);
 	} else {
-		//
-		return undefined;
+		node = makeInstance(solid_name, option);
+		raw = node.root;
+
+		is_internal = false;
+		mount_l = node.mount;
 	}
-	mapToNode(node, option);
-	return node;
+
+	if (is_internal) {
+		applyToDOM(node, option);
+	} else {
+		node.committer.commits(option);
+	}
+
+	return {
+		mount: mount_l,
+		is_internal,
+		node,
+		raw,
+	};
 }
 
-function mapToNode(
+function applyProperty() {}
+
+function applyToDOM(
 	node,
-	{ tx, tags = {}, props, ...others } = {},
+	{ tx, tags = {}, ...others } = {},
 	{ except_event = false } = {}
 ) {
 	if (isNotEmpty(tx)) {
-		// node.textContent = tx;
 		const first_child = node.firstChild;
 		let text_node;
 
