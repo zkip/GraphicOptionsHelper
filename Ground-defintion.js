@@ -342,15 +342,20 @@ define(function Demo4({ get }) {
 define(function List({ get }) {
 	const variables = { name: "", count: 3 };
 	const modifiers = {
-		name: ["div"],
-		count: ["div/div/@for/span"],
+		name: ["div", "div/div"],
+		count: ["div/div", "div/div/@for/span"],
 	};
 	return {
 		variables,
 		modifiers,
 		children: {
 			div: ({ get }) => ({ tx: "Hello, " + get("name") }),
-			"div/div": ({ get }) => ({ tags: { container: true } }),
+			"div/div": ({ get }) => ({
+				tags: {
+					container: true,
+					[(get("name") || "oo") + get("count")]: true,
+				},
+			}),
 			"div/div/@for": ({ get }) => ({
 				$iteration: () => {
 					let i = 0;

@@ -41,6 +41,8 @@ function makeInstance(name, { ...props } = {}) {
 
 		const refs = {};
 
+		const tags_memo_map = {};
+
 		const iteration_map = {};
 		const iteration_map_stacked = {};
 		const condition_map = {};
@@ -60,6 +62,14 @@ function makeInstance(name, { ...props } = {}) {
 
 		defContext("/", variables);
 		defContext("/", deps);
+
+		function memorizeTags(node_ID, { tags }) {
+			tags_memo_map[node_ID] = tags;
+		}
+
+		function releaseMemoriedTags(node_ID) {
+			delete tags_memo_map[node_ID];
+		}
 
 		function resolveRelIterations(solid_path) {
 			const iterations = [];
@@ -179,33 +189,6 @@ function makeInstance(name, { ...props } = {}) {
 			};
 		}
 
-		function applyProperty(
-			solid_path,
-			option,
-			{ except_event = false } = {}
-		) {
-			if (isInternalSolid(solid_path)) {
-			}
-			const { variables, committer } = ins;
-			Object.entries(option).map(([key, value]) => {
-				if (key.startsWith("$")) return;
-				if (key.startsWith("@")) {
-					if (except_event) return;
-					node.addEventListener(key.slice(1), value);
-				} else {
-					if (key in variables) {
-						committer.commit(key, value);
-					} else {
-						if (isJustDirectAssign(node.nodeName, key)) {
-							node[key] = value;
-						} else {
-							node.setAttribute(key, value);
-						}
-					}
-				}
-			});
-		}
-
 		function update(
 			mutated_solids = Object.keys(mutation_map),
 			is_init = false
@@ -291,31 +274,33 @@ function makeInstance(name, { ...props } = {}) {
 								node_map[parent_solid_id] ||
 								node_map_dynamic[parent_solid_id];
 
-							const nodeID = genNodePureID(solid_path, indices);
+							const node_ID = genNodePureID(solid_path, indices);
 
 							const node_exsited_internal =
-								nodeID in node_map_dynamic;
+								node_ID in node_map_dynamic;
 							const node_exsited_custom =
-								nodeID in instance_map_dynamic;
+								node_ID in instance_map_dynamic;
 							const node_is_exsited =
 								node_exsited_internal || node_exsited_custom;
 							const comment_is_exsited =
-								nodeID in node_map_cache_condition;
+								node_ID in node_map_cache_condition;
 
 							if (condition !== noop) {
 								const ok = condition();
-								let comment = node_map_cache_condition[nodeID];
+								let comment = node_map_cache_condition[node_ID];
 
 								if (ok) {
 									if (comment_is_exsited) {
 										if (node_is_exsited) {
 											const node = node_exsited_internal
-												? node_map_dynamic[nodeID]
-												: instance_map_dynamic[nodeID]
+												? node_map_dynamic[node_ID]
+												: instance_map_dynamic[node_ID]
 														.root;
 											comment.replaceWith(node);
 										}
-										delete node_map_cache_condition[nodeID];
+										delete node_map_cache_condition[
+											node_ID
+										];
 									} else {
 										// nothing
 									}
@@ -324,17 +309,19 @@ function makeInstance(name, { ...props } = {}) {
 										// rebind data to DOM
 										if (node_exsited_internal) {
 											applyToDOM(
-												node_map_dynamic[nodeID],
+												node_map_dynamic[node_ID],
 												{ ...option },
 												{
 													except_event: true,
+													tags_memo:
+														tags_memo_map[node_ID],
 												}
 											);
 										}
 										if (node_exsited_custom) {
 											const {
 												committer,
-											} = instance_map_dynamic[nodeID];
+											} = instance_map_dynamic[node_ID];
 											committer.commits(option);
 										}
 									} else {
@@ -344,16 +331,18 @@ function makeInstance(name, { ...props } = {}) {
 											mount,
 											raw,
 										} = genNode(self_solid, {
-											...props,
+											props,
 											...option,
 										});
 
 										if (!comment_is_exsited) {
 											if (is_internal) {
-												node_map_dynamic[nodeID] = node;
+												node_map_dynamic[
+													node_ID
+												] = node;
 											} else {
 												instance_map_dynamic[
-													nodeID
+													node_ID
 												] = node;
 											}
 											// init true of condition
@@ -361,7 +350,7 @@ function makeInstance(name, { ...props } = {}) {
 										} else {
 											if (is_internal) {
 												comment.replaceWith(
-													node_map_dynamic[nodeID]
+													node_map_dynamic[node_ID]
 												);
 											} else {
 												comment.replaceWith(raw);
@@ -378,13 +367,13 @@ function makeInstance(name, { ...props } = {}) {
 											);
 											comment = node;
 											node_map_cache_condition[
-												nodeID
+												node_ID
 											] = comment;
 											if (node_is_exsited) {
 												const exsited_one = node_exsited_internal
-													? node_map_dynamic[nodeID]
+													? node_map_dynamic[node_ID]
 													: instance_map_dynamic[
-															nodeID
+															node_ID
 													  ];
 
 												exsited_one.replaceWith(
@@ -400,25 +389,26 @@ function makeInstance(name, { ...props } = {}) {
 							} else {
 								if (node_is_exsited) {
 									applyToDOM(
-										node_map_dynamic[nodeID],
+										node_map_dynamic[node_ID],
 										{ ...option },
 										{
 											except_event: true,
+											tags_memo: tags_memo_map[node_ID],
 										}
 									);
 								} else {
 									let { node, is_internal, mount } = genNode(
 										self_solid,
 										{
-											...props,
+											props,
 											...option,
 										}
 									);
 
 									if (is_internal) {
-										node_map_dynamic[nodeID] = node;
+										node_map_dynamic[node_ID] = node;
 									} else {
-										instance_map_dynamic[nodeID] = node;
+										instance_map_dynamic[node_ID] = node;
 									}
 
 									mount(parent_node);
@@ -428,6 +418,8 @@ function makeInstance(name, { ...props } = {}) {
 							indices_last = indices;
 
 							iteration_counts = indices;
+
+							memorizeTags(node_ID, option);
 						});
 
 						// remove the overflowed nodes
@@ -459,7 +451,7 @@ function makeInstance(name, { ...props } = {}) {
 							const { node, is_internal, mount } = genNode(
 								self_solid,
 								{
-									...props,
+									props,
 									...option,
 								}
 							);
@@ -479,12 +471,15 @@ function makeInstance(name, { ...props } = {}) {
 								const node = node_map[solid_path];
 								applyToDOM(node, option, {
 									except_event: true,
+									tags_memo: tags_memo_map[solid_path],
 								});
 							} else {
 								const node = instance_map[solid_path];
 								node.committer.commits(option);
 							}
 						}
+
+						memorizeTags(solid_path, option);
 					}
 				}
 			}
@@ -599,7 +594,7 @@ function resolveSpecialSolid(solid_name) {
 	}
 }
 
-function genNode(solid_name, option = {}) {
+function genNode(solid_name, { props, ...option } = {}) {
 	let node,
 		raw,
 		is_internal = true,
@@ -621,7 +616,7 @@ function genNode(solid_name, option = {}) {
 	if (is_internal) {
 		applyToDOM(node, option);
 	} else {
-		node.committer.commits(option);
+		node.committer.commits(props);
 	}
 
 	return {
@@ -637,7 +632,7 @@ function applyProperty() {}
 function applyToDOM(
 	node,
 	{ tx, tags = {}, ...others } = {},
-	{ except_event = false } = {}
+	{ except_event = false, tags_memo = {} } = {}
 ) {
 	if (isNotEmpty(tx)) {
 		const first_child = node.firstChild;
@@ -657,6 +652,14 @@ function applyToDOM(
 	Object.entries(tags).map(([key, has]) => {
 		if (has) {
 			node.classList.add(key);
+		} else {
+			node.classList.remove(key);
+		}
+	});
+
+	Object.entries(tags_memo).map(([key, has]) => {
+		if (key in tags) {
+			return;
 		} else {
 			node.classList.remove(key);
 		}
