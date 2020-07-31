@@ -72,7 +72,7 @@ async function start() {
 	await loadDefintion("Ground");
 	function mountOn(name, target, { ...props } = {}) {
 		try {
-			const { mount, committer } = makeInstance(name, props);
+			const { mount, committer, unmount } = makeInstance(name, props);
 			mount(target);
 		} catch (err) {
 			target.classList.add("has-error");
@@ -84,8 +84,9 @@ async function start() {
 	// mountOn("List", cases[1], { name: "SDFJJ" });
 	// mountOn("Demo1", cases[1]);
 	// mountOn("Demo2", cases[2]);
-	// mountOn("Demo4", cases[0]);
-	mountOn("Demo5", cases[0]);
+	// mountOn("Demo3", cases[1]);
+	mountOn("Demo6", cases[0]);
+	// mountOn("Demo5", cases[0]);
 	// (cases[0]);
 	// makeInstance("Demo1")(cases[1]);
 	// makeInstance("Demo0")(cases[2]);

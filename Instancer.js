@@ -33,6 +33,7 @@ function makeInstance(name, { ...props } = {}) {
 		const root = document.createDocumentFragment();
 		const node_map = {
 			// node_name SolidLiteral: DOM
+			"/": root,
 		};
 		const node_map_cache_condition = {};
 		const node_map_dynamic = {
@@ -285,77 +286,68 @@ function makeInstance(name, { ...props } = {}) {
 							const comment_is_exsited =
 								node_ID in node_map_cache_condition;
 
+							const is_internal = isInternalSolid(self_solid);
+
+							// console.log("============", name);
 							if (condition !== noop) {
 								const ok = condition();
 								let comment = node_map_cache_condition[node_ID];
 
 								if (ok) {
-									if (comment_is_exsited) {
-										if (node_is_exsited) {
-											const node = node_exsited_internal
-												? node_map_dynamic[node_ID]
-												: instance_map_dynamic[node_ID]
-														.root;
-											comment.replaceWith(node);
+									let mount_justify = noop;
+									let node_justify = null;
+
+									if (node_is_exsited) {
+										// rebind data
+										const node = node_exsited_internal
+											? node_map_dynamic[node_ID]
+											: instance_map_dynamic[node_ID];
+
+										node_justify = node;
+
+										if (is_internal) {
+											applyToDOM(node);
+										} else {
+											node.committer.commits(option);
 										}
+									} else {
+										const { node, mount } = genNode(
+											self_solid,
+											{
+												props,
+												...option,
+											}
+										);
+
+										mount_justify = mount;
+										node_justify = node;
+
+										if (is_internal) {
+											node_map_dynamic[node_ID] = node;
+										} else {
+											instance_map_dynamic[
+												node_ID
+											] = node;
+										}
+									}
+
+									if (comment_is_exsited) {
+										// replace to comment
+										let comment =
+											node_map_cache_condition[node_ID];
+										let raw = is_internal
+											? node_map_dynamic[node_ID]
+											: node_justify.root;
+
+										comment.replaceWith(raw);
+
+										node_justify.beReplaced();
+
 										delete node_map_cache_condition[
 											node_ID
 										];
 									} else {
-										// nothing
-									}
-
-									if (node_is_exsited) {
-										// rebind data to DOM
-										if (node_exsited_internal) {
-											applyToDOM(
-												node_map_dynamic[node_ID],
-												{ ...option },
-												{
-													except_event: true,
-													tags_memo:
-														tags_memo_map[node_ID],
-												}
-											);
-										}
-										if (node_exsited_custom) {
-											const {
-												committer,
-											} = instance_map_dynamic[node_ID];
-											committer.commits(option);
-										}
-									} else {
-										let {
-											node,
-											is_internal,
-											mount,
-											raw,
-										} = genNode(self_solid, {
-											props,
-											...option,
-										});
-
-										if (!comment_is_exsited) {
-											if (is_internal) {
-												node_map_dynamic[
-													node_ID
-												] = node;
-											} else {
-												instance_map_dynamic[
-													node_ID
-												] = node;
-											}
-											// init true of condition
-											mount(parent_node);
-										} else {
-											if (is_internal) {
-												comment.replaceWith(
-													node_map_dynamic[node_ID]
-												);
-											} else {
-												comment.replaceWith(raw);
-											}
-										}
+										mount_justify(parent_node);
 									}
 								} else {
 									if (comment_is_exsited) {
@@ -397,13 +389,10 @@ function makeInstance(name, { ...props } = {}) {
 										}
 									);
 								} else {
-									let { node, is_internal, mount } = genNode(
-										self_solid,
-										{
-											props,
-											...option,
-										}
-									);
+									let { node, mount } = genNode(self_solid, {
+										props,
+										...option,
+									});
 
 									if (is_internal) {
 										node_map_dynamic[node_ID] = node;
@@ -447,14 +436,13 @@ function makeInstance(name, { ...props } = {}) {
 					} else {
 						const { $name, ...option } =
 							mutation_action(contextor_mutable) || {};
+
+						const is_internal = isInternalSolid(self_solid);
 						if (is_init) {
-							const { node, is_internal, mount } = genNode(
-								self_solid,
-								{
-									props,
-									...option,
-								}
-							);
+							const { node, mount } = genNode(self_solid, {
+								props,
+								...option,
+							});
 							if (is_internal) {
 								node_map[solid_path] = node;
 								if (isNotEmpty($name)) {
@@ -491,10 +479,80 @@ function makeInstance(name, { ...props } = {}) {
 
 		const top_DOM_backup = [];
 
+		let be_used = false;
+
+		let relase = noop;
+
+		// prepare
+		const setup = () => {
+			if (be_used) return { clean: noop };
+
+			const clean = committer.listen(({ variables: vars }) => {
+				const mutated_nodes = [];
+				const variables_effected = [];
+				setContext("/", vars);
+				Object.entries(vars).map(([variable_name]) => {
+					const ens = modifiers[variable_name];
+					if (isNotEmpty(ens)) {
+						mutated_nodes.push(...ens);
+					}
+
+					if (variable_name in mutations_effects) {
+						const effected = mutations_effects[variable_name];
+						variables_effected.push(...effected);
+
+						// resolve the effected nodes by the dependent variables
+						effected.map((variable_name) => {
+							const ens = modifiers[variable_name];
+							if (isNotEmpty(ens)) {
+								mutated_nodes.push(...ens);
+							}
+						});
+					}
+				});
+
+				// update the dependent variables
+				variables_effected.map((variable_name) => {
+					const deps_names = mutations_deps[variable_name];
+					const mutation_action = deps[variable_name];
+					const dep_values = evaluate(...deps_names);
+					const value = mutation_action(...dep_values);
+					setContext("/", { [variable_name]: value });
+				});
+
+				update(mutated_nodes);
+			});
+
+			committer.commits(variables);
+			committer.commits(props);
+
+			function evaluate(...dep_names) {
+				return dep_names.map((dep_name) => getContext("/", dep_name));
+			}
+
+			for (let i = 0; i < root.children.length; i++) {
+				const el = root.children[i];
+				top_DOM_backup.push(el);
+			}
+
+			console.log(top_DOM_backup, name, "<<<", root.children.length);
+
+			be_used = true;
+
+			return () => {
+				clean();
+				be_used = false;
+			};
+		};
+
+		console.log("==========", name, node_map, node_map_dynamic);
+
 		return {
 			committer,
 			root,
 			replaceWith(DOM) {
+				if (!be_used) return;
+
 				if (top_DOM_backup.length > 0) {
 					const first_child = top_DOM_backup[0];
 
@@ -504,75 +562,47 @@ function makeInstance(name, { ...props } = {}) {
 						root.appendChild(el);
 					});
 				}
+
+				relase();
 			},
 			unmount() {
+				if (!be_used) return;
+
 				top_DOM_backup.map((el) => {
 					root.appendChild(el);
 				});
-				console.log(top_DOM_backup);
+
+				relase();
 			},
-			mount(node_parent_raw) {
-				const clean_committer = committer.listen(
-					({ variables: vars }) => {
-						const mutated_nodes = [];
-						const variables_effected = [];
-						setContext("/", vars);
-						Object.entries(vars).map(([variable_name]) => {
-							const ens = modifiers[variable_name];
-							if (isNotEmpty(ens)) {
-								mutated_nodes.push(...ens);
-							}
+			beReplaced() {
+				const clean = setup();
 
-							if (variable_name in mutations_effects) {
-								const effected =
-									mutations_effects[variable_name];
-								variables_effected.push(...effected);
-
-								// resolve the effected nodes by the dependent variables
-								effected.map((variable_name) => {
-									const ens = modifiers[variable_name];
-									if (isNotEmpty(ens)) {
-										mutated_nodes.push(...ens);
-									}
-								});
-							}
-						});
-
-						// update the dependent variables
-						variables_effected.map((variable_name) => {
-							const deps_names = mutations_deps[variable_name];
-							const mutation_action = deps[variable_name];
-							const dep_values = evaluate(...deps_names);
-							const value = mutation_action(...dep_values);
-							setContext("/", { [variable_name]: value });
-						});
-
-						update(mutated_nodes);
-					}
-				);
-
-				committer.commits(variables);
-				committer.commits(props);
-
-				function evaluate(...dep_names) {
-					return dep_names.map((dep_name) =>
-						getContext("/", dep_name)
-					);
-				}
-
-				for (let i = 0; i < root.children.length; i++) {
-					const el = root.children[i];
-					top_DOM_backup.push(el);
-				}
-
-				mount(node_parent_raw, root);
 				onMounted(refs);
 
 				// clean up
-				return () => {
+				return (relase = () => {
 					onDestroyed();
-					clean_committer();
-				};
+					clean();
+
+					// release all memorized tags
+					// releaseMemoriedTags();
+				});
+			},
+			mount(DOM) {
+				const clean = setup();
+
+				mount(DOM, root);
+
+				onMounted(refs);
+
+				// clean up
+				return (relase = () => {
+					onDestroyed();
+					clean();
+
+					// release all memorized tags
+					// releaseMemoriedTags();
+				});
 			},
 		};
 	}
@@ -598,7 +628,7 @@ function genNode(solid_name, { props, ...option } = {}) {
 	let node,
 		raw,
 		is_internal = true,
-		mount_l = (parent_node) => mount(parent_node, node);
+		mount_justify = (parent_node) => mount(parent_node, node);
 	if (isSpecialSolid(solid_name)) {
 		raw = node = resolveSpecialSolid(solid_name);
 	} else if (isLogicalSolid(solid_name)) {
@@ -608,9 +638,9 @@ function genNode(solid_name, { props, ...option } = {}) {
 	} else {
 		node = makeInstance(solid_name, option);
 		raw = node.root;
+		mount_justify = node.mount;
 
 		is_internal = false;
-		mount_l = node.mount;
 	}
 
 	if (is_internal) {
@@ -620,8 +650,7 @@ function genNode(solid_name, { props, ...option } = {}) {
 	}
 
 	return {
-		mount: mount_l,
-		is_internal,
+		mount: mount_justify,
 		node,
 		raw,
 	};
@@ -643,7 +672,7 @@ function applyToDOM(
 		} else {
 			text_node = document.createTextNode(tx);
 			node.insertBefore(text_node, node.firstChild || null);
-			// node.appendChild(text_node);
+			node.appendChild(text_node);
 		}
 
 		text_node.replaceData(0, text_node.data.length, tx);

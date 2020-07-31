@@ -79,6 +79,7 @@ define(function Demo0({ get, set }) {
 	};
 });
 
+// mutable iteration with effects
 define(function Demo1({ get, set }) {
 	const modifiers = {
 		count: [
@@ -150,6 +151,7 @@ define(function Demo1({ get, set }) {
 			console.log("has created.");
 		},
 		onMounted({}) {
+			console.log("has mounted.");
 			addEventListener("click", () => {
 				commit("count", (Math.random() * 22) >> 0);
 			});
@@ -406,4 +408,29 @@ define(function Demo5({ get }) {
 		modifiers,
 		children,
 	};
+});
+
+define(function Demo6({ get }) {
+	const modifiers = {
+		count: ["input", "span", "@if/Demo1"],
+	};
+
+	const variables = {
+		count: 75,
+	};
+
+	const children = {
+		div: () => ({ tags: { Demo6: true } }),
+		input: ({ set, get }) => ({
+			"@input": (e) => set("count", e.target.value * 1),
+			value: get("count"),
+		}),
+		span: ({ get }) => ({ tx: get("count") }),
+		"@if": ({ get }) => ({
+			$condition: () => get("count") < 50,
+		}),
+		"@if/Demo1": ({ get }) => ({ count: get("count") }),
+	};
+
+	return { modifiers, variables, children };
 });
