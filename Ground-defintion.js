@@ -146,15 +146,24 @@ define(function Demo1({ get, set }) {
 	const committer = genCommitter(modifiers);
 	const [commit] = committer;
 
+	let clean;
+
 	return {
 		onCreated() {
 			console.log("has created.");
 		},
 		onMounted({}) {
 			console.log("has mounted.");
-			addEventListener("click", () => {
+			clean = listen(function click() {
+				console.log("--------");
 				commit("count", (Math.random() * 22) >> 0);
 			});
+		},
+		onDestroyed() {
+			console.log("has destroyed.");
+			if (clean) {
+				clean();
+			}
 		},
 		variables,
 		children,
@@ -416,7 +425,7 @@ define(function Demo6({ get }) {
 	};
 
 	const variables = {
-		count: 75,
+		count: 7,
 	};
 
 	const children = {

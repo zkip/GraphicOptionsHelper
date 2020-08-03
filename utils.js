@@ -12,6 +12,16 @@ function isEmpty(v) {
 	return typeof v === "undefined";
 }
 
+function listen(fn, target = window) {
+	const { name } = fn;
+
+	target.addEventListener(name, fn);
+
+	return () => {
+		target.removeEventListener(name, fn);
+	};
+}
+
 function isNotEmpty(v) {
 	return !isEmpty(v);
 }

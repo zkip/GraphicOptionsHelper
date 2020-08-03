@@ -1,4 +1,4 @@
-function makeInstance(name, { ...props } = {}, { path_based = "" } = {}) {
+function makeInstance(name, { ...props } = {}) {
 	if (CstorM.has(name)) {
 		const cstor = CstorM.get(name);
 
@@ -198,9 +198,7 @@ function makeInstance(name, { ...props } = {}, { path_based = "" } = {}) {
 				const mutation_action = mutation_map[solid_path];
 
 				const nps = solid_path.split("/");
-				const isTopNode =
-					nps.length === 1 ||
-					getOverlapSegCount(nps, path_based) === 1;
+				const isTopNode = nps.length === 1;
 				const [self_solid_literal] = nps.splice(-1);
 				const self_solid = getSolidType(self_solid_literal);
 
@@ -290,7 +288,6 @@ function makeInstance(name, { ...props } = {}, { path_based = "" } = {}) {
 
 							const is_internal = isInternalSolid(self_solid);
 
-							// console.log("============", name);
 							if (condition !== noop) {
 								const ok = condition();
 								let comment = node_map_cache_condition[node_ID];
@@ -341,9 +338,9 @@ function makeInstance(name, { ...props } = {}, { path_based = "" } = {}) {
 											? node_map_dynamic[node_ID]
 											: node_justify.root;
 
-										comment.replaceWith(raw);
-
 										node_justify.beReplaced();
+
+										comment.replaceWith(raw);
 
 										delete node_map_cache_condition[
 											node_ID
@@ -391,14 +388,10 @@ function makeInstance(name, { ...props } = {}, { path_based = "" } = {}) {
 										}
 									);
 								} else {
-									let { node, mount } = genNode(
-										self_solid,
-										{
-											props,
-											...option,
-										},
-										{ path_based: solid_path }
-									);
+									let { node, mount } = genNode(self_solid, {
+										props,
+										...option,
+									});
 
 									if (is_internal) {
 										node_map_dynamic[node_ID] = node;
@@ -541,8 +534,6 @@ function makeInstance(name, { ...props } = {}, { path_based = "" } = {}) {
 				top_DOM_backup.push(el);
 			}
 
-			console.log(top_DOM_backup, name, "<<<", root.children.length);
-
 			be_used = true;
 
 			return () => {
@@ -550,8 +541,6 @@ function makeInstance(name, { ...props } = {}, { path_based = "" } = {}) {
 				be_used = false;
 			};
 		};
-
-		console.log("==========", name, node_map, node_map_dynamic);
 
 		return {
 			committer,
@@ -630,11 +619,7 @@ function resolveSpecialSolid(solid_name) {
 	}
 }
 
-function genNode(
-	solid_name,
-	{ props, ...option } = {},
-	{ path_based = "" } = {}
-) {
+function genNode(solid_name, { props, ...option } = {}) {
 	let node,
 		raw,
 		is_internal = true,
@@ -646,7 +631,7 @@ function genNode(
 	} else if (isInternalSolid(solid_name)) {
 		raw = node = document.createElement(solid_name);
 	} else {
-		node = makeInstance(solid_name, option, { path_based });
+		node = makeInstance(solid_name, option);
 		raw = node.root;
 		mount_justify = node.mount;
 
@@ -664,13 +649,6 @@ function genNode(
 		node,
 		raw,
 	};
-}
-
-function getOverlapSegCount(path_target, path_based) {
-	let count = 0;
-	console.log(path_target, path_based, "===");
-
-	return count;
 }
 
 function applyProperty() {}
