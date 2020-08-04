@@ -443,3 +443,61 @@ define(function Demo6({ get }) {
 
 	return { modifiers, variables, children };
 });
+
+define(function Demo7({ get }) {
+	const modifiers = {
+		count: ["div/input", "div/span", "div/@for/div"],
+	};
+	const variables = {
+		count: 10,
+	};
+	const children = {
+		div: noop,
+		"div/input": ({ get, set }) => ({
+			"@input": (e) => set("count", e.target.value * 1),
+			value: get("count"),
+		}),
+		"div/span": ({ get, set }) => ({
+			tx: get("count"),
+		}),
+		"div/@for": ({ get, set, gfs }) => ({
+			$effects: () => ({
+				randCount: (i) => (Math.random() * i) >> 0,
+			}),
+			$iteration: (indices, ...args) => {
+				let i = 0;
+				return {
+					condition: () =>
+						i < gfs(indices, "randCount", get("count")),
+					// condition: () => i < get("count"),
+					defer() {
+						i++;
+					},
+				};
+			},
+		}),
+		"div/@for/div": ({}, [i]) => ({
+			tx: i,
+		}),
+	};
+
+	// const committer = genCommitter(modifiers);
+	// const [commit] = committer;
+
+	let clean;
+
+	return {
+		onMounted() {
+			// clean = listen(function click() {
+			// 	commit("count", (Math.random() * 22) >> 0);
+			// });
+		},
+		onDestroyed() {
+			// clean();
+		},
+		modifiers,
+		variables,
+		children,
+		// committer,
+	};
+});
