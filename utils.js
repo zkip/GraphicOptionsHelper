@@ -169,6 +169,9 @@ function genContextor() {
 	const transformer_map = {};
 	const need_update_map = {};
 	const values_cached = {};
+	const mutation_snapshot = {};
+
+	let mutations_deps;
 
 	const result = assign([get, set, def], {
 		get,
@@ -178,6 +181,7 @@ function genContextor() {
 		def,
 		withBy,
 		setTransformers,
+		setMutationsDeps,
 	});
 
 	// [ value any, isLocal bool ]
@@ -252,26 +256,47 @@ function genContextor() {
 		if (isNotEmpty(tfms_scoped)) {
 			const transformer = tfms_scoped[name];
 			if (isNotEmpty(transformer)) {
-				const need_update = fallback({})(need_update_map[scope]);
+				const need_update_m = fallback({})(need_update_map[scope]);
 				const vcm = fallback({})(values_cached[scope]);
-
-				if (!(name in need_update)) {
-					(need_update_map[scope] = need_update)[name] = true;
-					(values_cached[scope] = vcm)[name] = [];
-				}
-
 				const local_index = last(indices);
-				// new logical node
-				if (!(local_index in vcm[name])) {
-					need_update[name] = true;
+				const flag = isEmpty(local_index) ? "/" : local_index;
+				const snapshot = fallback({})(mutation_snapshot[scope]);
+				const deps = mutations_deps[name];
+				const values = deps.map((k) => get(scope, k));
+				const snapshot_values = snapshot[name];
+
+				const isMutated = isEmpty(snapshot_values)
+					? true
+					: values.reduce(
+							(r, v, i) => r || v !== snapshot_values[i],
+							false
+					  );
+
+				// init
+				if (!(name in need_update_m)) {
+					(need_update_map[scope] = need_update_m)[name] = true;
+					(values_cached[scope] = vcm)[name] = [];
+					(mutation_snapshot[scope] = snapshot)[name] = {};
 				}
 
-				if (need_update[name]) {
-					vcm[name][local_index] = transformer(...args);
-					need_update[name] = false;
+				// when the logical node appended
+				if (!(flag in vcm[name])) {
+					need_update_m[name] = true;
 				}
 
-				return vcm[name][local_index];
+				// when the solid mutated
+				if (isMutated) {
+					need_update_m[name] = true;
+				}
+
+				// update
+				if (need_update_m[name]) {
+					vcm[name][flag] = transformer(...args);
+					need_update_m[name] = false;
+					snapshot[name] = values;
+				}
+
+				return vcm[name][flag];
 			}
 		}
 	}
@@ -280,6 +305,10 @@ function genContextor() {
 		const m = fallbackToObject(transformer_map[scope]);
 		assign((transformer_map[scope] = m), transformers);
 		return result;
+	}
+
+	function setMutationsDeps(deps) {
+		mutations_deps = deps;
 	}
 
 	function withBy(scope) {

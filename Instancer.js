@@ -20,6 +20,8 @@ function makeInstance(name, { ...props } = {}) {
 			committer = genCommitter(modifiers),
 		} = tail;
 
+		contextor.setMutationsDeps(mutations_deps);
+
 		const makeMutable = (contextor) => {
 			const set = (...args) => {
 				const result = contextor.set(...args);

@@ -451,6 +451,9 @@ define(function Demo7({ get }) {
 	const variables = {
 		count: 10,
 	};
+	const mutations_deps = {
+		randCount: ["count"],
+	};
 	const children = {
 		div: noop,
 		"div/input": ({ get, set }) => ({
@@ -462,13 +465,12 @@ define(function Demo7({ get }) {
 		}),
 		"div/@for": ({ get, set, gfs }) => ({
 			$effects: () => ({
-				randCount: (i) => (Math.random() * i) >> 0,
+				randCount: () => (Math.random() * get("count")) >> 0,
 			}),
 			$iteration: (indices, ...args) => {
 				let i = 0;
 				return {
-					condition: () =>
-						i < gfs(indices, "randCount", get("count")),
+					condition: () => i < gfs(indices, "randCount"),
 					// condition: () => i < get("count"),
 					defer() {
 						i++;
@@ -495,6 +497,7 @@ define(function Demo7({ get }) {
 		onDestroyed() {
 			// clean();
 		},
+		mutations_deps,
 		modifiers,
 		variables,
 		children,
