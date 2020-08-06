@@ -307,7 +307,7 @@ function makeInstance(name, { ...props } = {}) {
 										node_justify = node;
 
 										if (is_internal) {
-											applyToDOM(node);
+											applyToDOM(node, option);
 										} else {
 											node.committer.commits(option);
 										}
@@ -340,7 +340,9 @@ function makeInstance(name, { ...props } = {}) {
 											? node_map_dynamic[node_ID]
 											: node_justify.root;
 
-										node_justify.beReplaced();
+										if (!is_internal) {
+											node_justify.beReplaced();
+										}
 
 										comment.replaceWith(raw);
 
@@ -602,6 +604,8 @@ function makeInstance(name, { ...props } = {}) {
 				});
 			},
 		};
+	} else {
+		throw Error(`No Solid named "${name}"`);
 	}
 }
 

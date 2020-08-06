@@ -80,12 +80,24 @@ async function start() {
 			console.error(err);
 		}
 	}
-	// mountOn("Demo4", cases[0]);
+	// mountOn("Demo0", cases[0]);
+	// mountOn("Demo1", cases[1]);
+	// mountOn("Demo2", cases[2]);
+
+	// mountOn("Demo3", cases[0]);
+	// mountOn("Demo4", cases[1]);
+	// mountOn("Demo5", cases[2]);
+
+	mountOn("Demo6", cases[0]);
+	mountOn("Demo7", cases[1]);
+	mountOn("Demo8", cases[2]);
+
 	// mountOn("List", cases[1], { name: "SDFJJ" });
 	// mountOn("Demo1", cases[1]);
 	// mountOn("Demo2", cases[2]);
-	// mountOn("Demo3", cases[1]);
-	mountOn("Demo7", cases[0]);
+	// mountOn("Demo4", cases[2]);
+	// mountOn("Demo7", cases[0]);
+	// mountOn("Demo5", cases[1]);
 	// mountOn("Demo5", cases[0]);
 	// (cases[0]);
 	// makeInstance("Demo1")(cases[1]);

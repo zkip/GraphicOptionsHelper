@@ -261,7 +261,7 @@ function genContextor() {
 				const local_index = last(indices);
 				const flag = isEmpty(local_index) ? "/" : local_index;
 				const snapshot = fallback({})(mutation_snapshot[scope]);
-				const deps = mutations_deps[name];
+				const deps = fallback([])(mutations_deps[name]);
 				const values = deps.map((k) => get(scope, k));
 				const snapshot_values = snapshot[name];
 
