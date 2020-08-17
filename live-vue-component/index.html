@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+		<script src="./vue.js"></script>
+		<script>
+			Vue.component("button-counter", {
+				data: function () {
+					return {
+						count: 0,
+					};
+				},
+				template:
+					'<button v-on:click="count++">You clicked me {{ count }} times.</button>',
+			});
+			addEventListener("load", () => {
+				const app = new Vue({
+					el: "#app",
+					data: {
+						message: "Hello2",
+					},
+				});
+				console.log(app);
+			});
+		</script>
+	</head>
+	<body>
+		<div id="app">
+			<span>{{ message }}</span>
+			<div>
+				<component is="button-counter" />
+			</div>
+		</div>
+	</body>
+</html>
