@@ -1,0 +1,21 @@
+type AppHelper like App {
+
+    outline     Outline<frag>
+    inspector   PropertyInspector
+    storages    []StorageNode
+    explorer    Explorer
+    tools       ToolBox
+    interactive_renderer    InteractiveRenderer
+
+    import()
+    export()
+
+    helpers {
+        interactive_renderer
+    }
+
+    frag {
+
+    }
+
+}
