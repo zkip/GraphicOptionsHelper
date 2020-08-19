@@ -88,9 +88,11 @@ async function start() {
 	// mountOn("Demo4", cases[1]);
 	// mountOn("Demo5", cases[2]);
 
-	mountOn("Demo6", cases[0]);
-	mountOn("Demo7", cases[1]);
-	mountOn("Demo8", cases[2]);
+	// mountOn("Demo6", cases[0]);
+	// mountOn("Demo7", cases[1]);
+	// mountOn("Demo8", cases[2]);
+
+	mountOn("Demo8", cases[0]);
 
 	// mountOn("List", cases[1], { name: "SDFJJ" });
 	// mountOn("Demo1", cases[1]);

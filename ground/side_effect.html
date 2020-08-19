@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+		<script src="../lib/vue.js"></script>
+		<script>
+			addEventListener("load", () => {
+				const app = new Vue({
+					el: ".app",
+					data: () => ({}),
+					methods: {
+						rand() {
+							return Math.random();
+						},
+					},
+					template: `
+                        <div>
+                            <div v-for="(i) in (rand()*10>>0)+4">{{i}}</div>
+                        </div>
+                    `,
+				});
+			});
+		</script>
+	</head>
+	<body>
+		<div class="app"></div>
+	</body>
+</html>

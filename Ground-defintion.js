@@ -504,3 +504,33 @@ define(function Demo7({ get }) {
 		// committer,
 	};
 });
+
+define(function Demo8({ get }) {
+	const modifiers = {};
+	// const variables =
+
+	const children = {
+		div: noop,
+		"div/@for": ({ gfs }) => ({
+			$effects: () => ({
+				randCount: () => (Math.random() * 10) >> 0,
+			}),
+			$iteration: (indices, ...args) => {
+				let i = 0;
+				return {
+					condition: () => i < gfs(indices, "randCount"),
+					defer() {
+						i++;
+					},
+				};
+			},
+		}),
+		"div/@for/div$3": ({ get }, [i]) => ({ tx: i }),
+		"div/@for/div$2": ({ get }, [i]) => ({ tx: i }),
+	};
+
+	return {
+		modifiers,
+		children,
+	};
+});

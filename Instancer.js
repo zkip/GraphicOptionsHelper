@@ -59,6 +59,9 @@ function makeInstance(name, { ...props } = {}) {
 
 		const iteration_count_map = {};
 
+		// logical node on the same hierarchy map
+		// const
+
 		let iteration_counts = [];
 
 		const effects_map = {};
@@ -214,6 +217,8 @@ function makeInstance(name, { ...props } = {}) {
 				logical_count_map[parent_solid_path] = lc = isEmpty(count)
 					? 0
 					: count + 1;
+
+				console.log(logical_count_map);
 
 				logical_position_map[solid_path] = lc;
 
