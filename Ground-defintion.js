@@ -506,9 +506,6 @@ define(function Demo7({ get }) {
 });
 
 define(function Demo8({ get }) {
-	const modifiers = {};
-	// const variables =
-
 	const children = {
 		div: noop,
 		"div/@for": ({ gfs }) => ({
@@ -525,12 +522,12 @@ define(function Demo8({ get }) {
 				};
 			},
 		}),
-		"div/@for/div$3": ({ get }, [i]) => ({ tx: i }),
-		"div/@for/div$2": ({ get }, [i]) => ({ tx: i }),
+		"div/@for/div$1": ({ get }, [i]) => ({ tx: i }),
+		"div/@for/div$2": ({ get }, [i]) => ({ tx: "s" + i }),
+		"div/@for/div$3": ({ get }, [i]) => ({ tx: "se" + i }),
 	};
 
 	return {
-		modifiers,
 		children,
 	};
 });

@@ -214,11 +214,8 @@ function makeInstance(name, { ...props } = {}) {
 					: node_map[parent_solid_path];
 
 				const count = logical_count_map[parent_solid_path];
-				logical_count_map[parent_solid_path] = lc = isEmpty(count)
-					? 0
-					: count + 1;
-
-				console.log(logical_count_map);
+				const lc = isEmpty(count) ? 0 : count + 1;
+				logical_count_map[parent_solid_path] = lc;
 
 				logical_position_map[solid_path] = lc;
 
@@ -408,7 +405,25 @@ function makeInstance(name, { ...props } = {}) {
 										instance_map_dynamic[node_ID] = node;
 									}
 
-									mount(parent_node);
+									let node_after = null;
+
+									if (lc > 0) {
+										const sibling_prev_order = lc - 1;
+										const sibling_prev_name = solid_path.replace(
+											`$${lc + 1}`,
+											`$${sibling_prev_order + 1}`
+										);
+										const sibling_prev_node_path = genNodePureID(
+											sibling_prev_name,
+											indices
+										);
+										node_after =
+											node_map_dynamic[
+												sibling_prev_node_path
+											];
+									}
+
+									mount(parent_node, node_after);
 								}
 							}
 
@@ -614,8 +629,8 @@ function makeInstance(name, { ...props } = {}) {
 	}
 }
 
-function mount(parent, child) {
-	parent.appendChild(child);
+function mount(parent, child, after = null) {
+	parent.insertBefore(child, after ? after.nextElementSibling : null);
 }
 
 function unmount(child) {
@@ -634,7 +649,7 @@ function genNode(solid_name, { props, ...option } = {}) {
 	let node,
 		raw,
 		is_internal = true,
-		mount_justify = (parent_node) => mount(parent_node, node);
+		mount_justify = (parent_node, after) => mount(parent_node, node, after);
 	if (isSpecialSolid(solid_name)) {
 		raw = node = resolveSpecialSolid(solid_name);
 	} else if (isLogicalSolid(solid_name)) {

@@ -1,0 +1,60 @@
+fn foo() uint {
+	uint count = 0
+
+	return count
+}
+
+fn foo() uint {
+	uint count = 0
+	
+	return count
+}
+
+fn factorial( c uint ) uint {
+	return c > 1 ? c * factorial( c - 1 ) : c
+}
+
+function factorial( c ) {
+	return c > 1 ? c * factorial( c - 1 ) : c
+}
+
+fn bar( c uint ) uint {
+	return c > 1 ? c * factorial( c - 1 ) : c
+}
+
+fn bar( c uint ) uint {
+	while true {}
+	return 1
+}
+
+let a = false
+
+fn bar( c uint ) uint {
+	while a {}
+	return 1
+}
+
+fn bar( c uint ) uint {
+	effects()
+	return 1
+}
+
+fn effects( ) {
+	bar()
+}
+
+fn bar( ) {
+	effects()
+}
+
+fn effects( ) {
+	bar()
+}
+
+let c = 30
+
+fn bar( ) {
+	for i := 0; i < c; i++ {
+
+	}
+}
