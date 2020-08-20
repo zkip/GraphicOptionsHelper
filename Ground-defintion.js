@@ -531,3 +531,39 @@ define(function Demo8({ get }) {
 		children,
 	};
 });
+
+define(function Demo9({ get }) {
+	const modifiers = {
+		count: ["div/@for/div$1", "div/@for/div$2", "div/@for/div$3"],
+	};
+	const variables = {
+		count: 2,
+	};
+	const children = {
+		div: noop,
+		"div/input": ({ set, get }) => ({
+			"@input": (e) => set("count", e.target.value),
+			value: get("count"),
+		}),
+		"div/@for": ({ get }) => ({
+			$iteration: (indices, ...args) => {
+				let i = 0;
+				return {
+					condition: () => i < get("count"),
+					defer() {
+						i++;
+					},
+				};
+			},
+		}),
+		"div/@for/div$1": ({ get }, [i]) => ({ tx: i }),
+		"div/@for/div$2": ({ get }, [i]) => ({ tx: "s" + i }),
+		"div/@for/div$3": ({ get }, [i]) => ({ tx: "se" + i }),
+	};
+
+	return {
+		modifiers,
+		variables,
+		children,
+	};
+});

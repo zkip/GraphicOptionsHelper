@@ -66,6 +66,12 @@ function makeInstance(name, { ...props } = {}) {
 
 		const effects_map = {};
 
+		addEventListener("keydown", ({ key }) => {
+			if (key === " ") {
+				console.log(node_map_dynamic, node_map);
+			}
+		});
+
 		defContext("/", variables);
 		defContext("/", deps);
 
