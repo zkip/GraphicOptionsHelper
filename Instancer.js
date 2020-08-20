@@ -59,8 +59,13 @@ function makeInstance(name, { ...props } = {}) {
 
 		const iteration_count_map = {};
 
-		// logical node on the same hierarchy map
-		// const
+		// logical node count on the same hierarchy map
+		const hierarchy_logical_node_count_map = {
+			/* solid_path str : count uint */
+		};
+		const hierarchy_logical_node_sign_map = {
+			/* solid_path str : is_exist bool */
+		};
 
 		let iteration_counts = [];
 
@@ -68,12 +73,24 @@ function makeInstance(name, { ...props } = {}) {
 
 		addEventListener("keydown", ({ key }) => {
 			if (key === " ") {
-				console.log(node_map_dynamic, node_map);
+				console.log(
+					hierarchy_logical_node_count_map,
+					hierarchy_logical_node_sign_map
+
+					// node_map_dynamic,
+					// node_map
+				);
 			}
 		});
 
 		defContext("/", variables);
 		defContext("/", deps);
+
+		function getSolidSign(solid_path) {
+			const parts = solid_path.split("$");
+			if (parts.length > 1) parts.splice(-1);
+			return parts.join("$");
+		}
 
 		function memorizeTags(node_ID, { tags }) {
 			tags_memo_map[node_ID] = tags;
@@ -224,6 +241,24 @@ function makeInstance(name, { ...props } = {}) {
 				logical_count_map[parent_solid_path] = lc;
 
 				logical_position_map[solid_path] = lc;
+
+				const solid_sign = getSolidSign(solid_path);
+
+				const exist_m = (hierarchy_logical_node_sign_map[
+					solid_sign
+				] = fallback({})(hierarchy_logical_node_sign_map[solid_sign]));
+
+				const is_exist_logical_node = solid_path in exist_m;
+
+				const hln_count =
+					fallback(0)(hierarchy_logical_node_count_map[solid_sign]) +
+					(!is_exist_logical_node ? 1 : 0);
+
+				hierarchy_logical_node_count_map[solid_sign] = hln_count;
+
+				if (!is_exist_logical_node) {
+					exist_m[solid_path] = true;
+				}
 
 				if (isLogicalSolid(self_solid)) {
 					const {
@@ -413,20 +448,36 @@ function makeInstance(name, { ...props } = {}) {
 
 									let node_after = null;
 
-									if (lc > 0) {
-										const sibling_prev_order = lc - 1;
+									if (hln_count > 0) {
+										const sibling_prev_order =
+											hln_count - 1;
 										const sibling_prev_name = solid_path.replace(
-											`$${lc + 1}`,
-											`$${sibling_prev_order + 1}`
+											`$${hln_count}`,
+											`$${sibling_prev_order}`
 										);
 										const sibling_prev_node_path = genNodePureID(
 											sibling_prev_name,
 											indices
 										);
+										// console.log(
+										// 	sibling_prev_name,
+										// 	"===",
+										// 	sibling_prev_node_path,
+										// 	node_map_dynamic[
+										// 		sibling_prev_node_path
+										// 	]
+										// );
 										node_after =
 											node_map_dynamic[
 												sibling_prev_node_path
 											];
+										console.log(
+											solid_path,
+											indices,
+											">>",
+											node,
+											node_after
+										);
 									}
 
 									mount(parent_node, node_after);
