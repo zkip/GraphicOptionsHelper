@@ -401,7 +401,7 @@ define(function Demo5({ get }) {
 		div: () => ({ tags: { Demo5: true } }),
 		"div/input": ({ set, get }) => ({
 			value: get("count"),
-			"@input": (e) => set("count", e.target.value),
+			"@input": (e) => set("count", e.target.value * 1),
 		}),
 		"div/span": ({ get }) => ({ tx: get("count") }),
 		"div/@if": ({ get }) => ({ $condition: () => get("count") < 7 }),
@@ -508,7 +508,7 @@ define(function Demo7({ get }) {
 define(function Demo8({ get }) {
 	const children = {
 		div: noop,
-		"div/@for": ({ gfs }) => ({
+		"@for": ({ gfs }) => ({
 			$effects: () => ({
 				randCount: () => (Math.random() * 10) >> 0,
 			}),
@@ -522,9 +522,9 @@ define(function Demo8({ get }) {
 				};
 			},
 		}),
-		"div/@for/div$1": ({ get }, [i]) => ({ tx: i }),
-		"div/@for/div$2": ({ get }, [i]) => ({ tx: "s" + i }),
-		"div/@for/div$3": ({ get }, [i]) => ({ tx: "se" + i }),
+		"@for/div$1": ({ get }, [i]) => ({ tx: i }),
+		"@for/div$2": ({ get }, [i]) => ({ tx: "s" + i }),
+		"@for/div$3": ({ get }, [i]) => ({ tx: "se" + i }),
 	};
 
 	return {
@@ -533,19 +533,28 @@ define(function Demo8({ get }) {
 });
 
 define(function Demo9({ get }) {
-	const modifiers = {
-		count: ["div/@for/div$1", "div/@for/div$2", "div/@for/div$3"],
-	};
 	const variables = {
 		count: 2,
 	};
+	const modifiers = {
+		count: [
+			"div/input",
+			"div/span",
+			"@for/div$1",
+			"@for/div$2",
+			"@for/div$3",
+		],
+	};
 	const children = {
 		div: noop,
-		"div/input": ({ set, get }) => ({
-			"@input": (e) => set("count", e.target.value),
+		"div/input": ({ get, set }) => ({
 			value: get("count"),
+			"@input": (e) => set("count", e.target.value * 1),
 		}),
-		"div/@for": ({ get }) => ({
+		"div/span": ({ get, set }) => ({
+			tx: get("count"),
+		}),
+		"@for": ({ get }) => ({
 			$iteration: (indices, ...args) => {
 				let i = 0;
 				return {
@@ -556,14 +565,83 @@ define(function Demo9({ get }) {
 				};
 			},
 		}),
-		"div/@for/div$1": ({ get }, [i]) => ({ tx: i }),
-		"div/@for/div$2": ({ get }, [i]) => ({ tx: "s" + i }),
-		"div/@for/div$3": ({ get }, [i]) => ({ tx: "se" + i }),
+		"@for/div$1": ({ get }, [i]) => ({ tx: i }),
+		"@for/div$2": ({ get }, [i]) => ({ tx: "s" + i }),
+		"@for/div$3": ({ get }, [i]) => ({ tx: "se" + i }),
 	};
 
 	return {
-		modifiers,
 		variables,
+		modifiers,
+		children,
+	};
+});
+
+define(function Demo10() {
+	const variables = {
+		count: 3,
+	};
+	const modifiers = {
+		count: ["input", "@for/div"],
+	};
+	const children = {
+		input: ({ get, set }) => ({
+			value: get("count"),
+			"@input": ({ target }) => set("count", target.value * 1),
+		}),
+		div: noop,
+		"@for": ({ get }) => ({
+			$iteration: (indices, ...args) => {
+				let i = 0;
+				return {
+					condition: () => i < get("count"),
+					defer() {
+						i++;
+					},
+				};
+			},
+		}),
+		"@for/div": ({}, [i]) => ({ tx: i }),
+	};
+
+	return {
+		variables,
+		modifiers,
+		children,
+	};
+});
+
+define(function Demo11({ get }) {
+	const variables = {
+		count: 3,
+	};
+	const modifiers = {
+		count: ["input", "@for/@if/div"],
+	};
+	const children = {
+		input: ({ get, set }) => ({
+			value: get("count"),
+			"@input": ({ target }) => set("count", target.value * 1),
+		}),
+		div: noop,
+		"@for": ({ get }) => ({
+			$iteration: (indices, ...args) => {
+				let i = 0;
+				return {
+					condition: () => i < get("count"),
+					defer() {
+						i++;
+					},
+				};
+			},
+		}),
+		"@for/@if": ({}) => ({ $condition: ([i], ...args) => i % 2 === 0 }),
+		"@for/@if/div": ({}, [i]) => ({ tx: "H" + i }),
+	};
+
+	return {
+		variables,
+		modifiers,
 		children,
 	};
 });

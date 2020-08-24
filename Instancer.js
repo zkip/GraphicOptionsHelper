@@ -33,9 +33,9 @@ function makeInstance(name, { ...props } = {}) {
 		};
 
 		const root = document.createDocumentFragment();
+
 		const node_map = {
 			// node_name SolidLiteral: DOM
-			"/": root,
 		};
 		const node_map_cache_condition = {};
 		const node_map_dynamic = {
@@ -71,14 +71,24 @@ function makeInstance(name, { ...props } = {}) {
 
 		const effects_map = {};
 
+		let root_actually = empty_node;
+
+		const top_DOM_backup = [];
+
+		let be_used = false;
+
+		let relase = noop;
+
+		const getRoot = () => (be_used ? root_actually : root);
+
 		addEventListener("keydown", ({ key }) => {
 			if (key === " ") {
 				console.log(
-					hierarchy_logical_node_count_map,
-					hierarchy_logical_node_sign_map
+					// hierarchy_logical_node_count_map,
+					// hierarchy_logical_node_sign_map
 
-					// node_map_dynamic,
-					// node_map
+					node_map_dynamic,
+					node_map
 				);
 			}
 		});
@@ -234,7 +244,7 @@ function makeInstance(name, { ...props } = {}) {
 				const parent_solid = isTopNode ? null : getSolidType(last(nps));
 				const parent_solid_path = isTopNode ? "" : nps.join("/");
 				let parent_node = isTopNode
-					? root
+					? getRoot()
 					: node_map[parent_solid_path];
 
 				const count = logical_count_map[parent_solid_path];
@@ -320,8 +330,10 @@ function makeInstance(name, { ...props } = {}) {
 								indices
 							);
 							const parent_node =
-								node_map[parent_solid_id] ||
-								node_map_dynamic[parent_solid_id];
+								parent_solid_id === "/"
+									? getRoot()
+									: node_map[parent_solid_id] ||
+									  node_map_dynamic[parent_solid_id];
 
 							const node_ID = genNodePureID(solid_path, indices);
 
@@ -354,7 +366,7 @@ function makeInstance(name, { ...props } = {}) {
 
 										if (is_internal) {
 											applyToDOM(node, option);
-										} else {
+										} else if (!comment_is_exsited) {
 											node.committer.commits(option);
 										}
 									} else {
@@ -382,15 +394,17 @@ function makeInstance(name, { ...props } = {}) {
 										// replace to comment
 										let comment =
 											node_map_cache_condition[node_ID];
-										let raw = is_internal
-											? node_map_dynamic[node_ID]
-											: node_justify.root;
 
-										if (!is_internal) {
-											node_justify.beReplaced();
+										if (is_internal) {
+											comment.replaceWith(
+												node_map_dynamic[node_ID]
+											);
+										} else {
+											node_justify.beReplaced(comment);
+											node_justify.committer.commits(
+												option
+											);
 										}
-
-										comment.replaceWith(raw);
 
 										delete node_map_cache_condition[
 											node_ID
@@ -467,6 +481,8 @@ function makeInstance(name, { ...props } = {}) {
 												sibling_prev_node_path
 											];
 									}
+
+									// console.log(solid_path, "---->");
 
 									mount(parent_node, node_after);
 								}
@@ -545,12 +561,6 @@ function makeInstance(name, { ...props } = {}) {
 
 		onCreated();
 
-		const top_DOM_backup = [];
-
-		let be_used = false;
-
-		let relase = noop;
-
 		// prepare
 		const setup = () => {
 			if (be_used) return { clean: noop };
@@ -613,7 +623,7 @@ function makeInstance(name, { ...props } = {}) {
 
 		return {
 			committer,
-			root,
+			getRoot,
 			replaceWith(DOM) {
 				if (!be_used) return;
 
@@ -638,16 +648,21 @@ function makeInstance(name, { ...props } = {}) {
 
 				relase();
 			},
-			beReplaced() {
+			beReplaced(DOM) {
 				const clean = setup();
 
 				onMounted(refs);
+
+				root_actually = DOM.parentNode;
+
+				DOM.replaceWith(root);
 
 				// clean up
 				return (relase = () => {
 					onDestroyed();
 					clean();
 
+					root_actually = empty_node;
 					// release all memorized tags
 					// releaseMemoriedTags();
 				});
@@ -659,10 +674,14 @@ function makeInstance(name, { ...props } = {}) {
 
 				onMounted(refs);
 
+				root_actually = DOM;
+
 				// clean up
 				return (relase = () => {
 					onDestroyed();
 					clean();
+
+					root_actually = empty_node;
 
 					// release all memorized tags
 					// releaseMemoriedTags();
@@ -695,18 +714,16 @@ function resolveSpecialSolid(solid_name) {
 
 function genNode(solid_name, { props, ...option } = {}) {
 	let node,
-		raw,
 		is_internal = true,
 		mount_justify = (parent_node, after) => mount(parent_node, node, after);
 	if (isSpecialSolid(solid_name)) {
-		raw = node = resolveSpecialSolid(solid_name);
+		node = resolveSpecialSolid(solid_name);
 	} else if (isLogicalSolid(solid_name)) {
-		raw = node = document.createDocumentFragment();
+		node = document.createDocumentFragment();
 	} else if (isInternalSolid(solid_name)) {
-		raw = node = document.createElement(solid_name);
+		node = document.createElement(solid_name);
 	} else {
 		node = makeInstance(solid_name, option);
-		raw = node.root;
 		mount_justify = node.mount;
 
 		is_internal = false;
@@ -721,7 +738,6 @@ function genNode(solid_name, { props, ...option } = {}) {
 	return {
 		mount: mount_justify,
 		node,
-		raw,
 	};
 }
 
