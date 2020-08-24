@@ -88,8 +88,9 @@ function makeInstance(name, { ...props } = {}) {
 
 		function getSolidSign(solid_path) {
 			const parts = solid_path.split("$");
-			if (parts.length > 1) parts.splice(-1);
-			return parts.join("$");
+			if (parts.length > 1)
+				return [parts.join("$"), parts.splice(-1) * 1];
+			return [parts.join("$"), 0];
 		}
 
 		function memorizeTags(node_ID, { tags }) {
@@ -242,7 +243,9 @@ function makeInstance(name, { ...props } = {}) {
 
 				logical_position_map[solid_path] = lc;
 
-				const solid_sign = getSolidSign(solid_path);
+				const [solid_sign, solid_logical_position] = getSolidSign(
+					solid_path
+				);
 
 				const exist_m = (hierarchy_logical_node_sign_map[
 					solid_sign
@@ -446,38 +449,23 @@ function makeInstance(name, { ...props } = {}) {
 										instance_map_dynamic[node_ID] = node;
 									}
 
-									let node_after = null;
+									let node_after = empty_node;
 
-									if (hln_count > 0) {
+									if (solid_logical_position > 1) {
 										const sibling_prev_order =
-											hln_count - 1;
+											solid_logical_position - 1;
 										const sibling_prev_name = solid_path.replace(
-											`$${hln_count}`,
+											`$${solid_logical_position}`,
 											`$${sibling_prev_order}`
 										);
 										const sibling_prev_node_path = genNodePureID(
 											sibling_prev_name,
 											indices
 										);
-										// console.log(
-										// 	sibling_prev_name,
-										// 	"===",
-										// 	sibling_prev_node_path,
-										// 	node_map_dynamic[
-										// 		sibling_prev_node_path
-										// 	]
-										// );
 										node_after =
 											node_map_dynamic[
 												sibling_prev_node_path
 											];
-										console.log(
-											solid_path,
-											indices,
-											">>",
-											node,
-											node_after
-										);
 									}
 
 									mount(parent_node, node_after);
@@ -686,8 +674,11 @@ function makeInstance(name, { ...props } = {}) {
 	}
 }
 
-function mount(parent, child, after = null) {
-	parent.insertBefore(child, after ? after.nextElementSibling : null);
+function mount(parent, child, after = empty_node) {
+	parent.insertBefore(
+		child,
+		after === empty_node ? null : after.nextElementSibling
+	);
 }
 
 function unmount(child) {

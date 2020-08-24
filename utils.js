@@ -8,6 +8,8 @@ const multiply = (a, b) => a * b;
 const addOne = (v) => v + 1;
 const addN = (n) => (v) => v + n;
 
+const empty_node = document.createElement("div");
+
 function isEmpty(v) {
 	return typeof v === "undefined";
 }
