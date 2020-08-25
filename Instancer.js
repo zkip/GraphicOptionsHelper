@@ -507,10 +507,17 @@ function makeInstance(name, { ...props } = {}) {
 						if (!not_changed) {
 							genFlatDiffIndices((indices) => {
 								let nodeID = genNodePureID(solid_path, indices);
-								const node = node_map_dynamic[nodeID];
-								if (node) {
+								if (nodeID in node_map_dynamic) {
+									const node = node_map_dynamic[nodeID];
 									unmount(node);
 									delete node_map_dynamic[nodeID];
+								}
+
+								if (nodeID in node_map_cache_condition) {
+									const comment =
+										node_map_cache_condition[nodeID];
+									unmount(comment);
+									delete node_map_cache_condition[nodeID];
 								}
 							})(
 								indices_prev.map(addOne),
