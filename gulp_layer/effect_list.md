@@ -1,0 +1,3 @@
+-   已经发生过的事件，如 alert，生命周期 onCreated，onMounted
+-   未来发生的事件，如addEventListener
+-   应用状态，如滚动距离，表单输入，菜单选中项，IO和视觉元素等
