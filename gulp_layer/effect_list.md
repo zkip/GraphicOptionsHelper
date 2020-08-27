@@ -73,4 +73,9 @@ uppdate( "-App$setCount$0" )
 
 > 当影响因素位于所在对应列表堆顶时，它将会使状态发生变化
 
-## 定义 & 执行
+### 记录状态
+考虑以下情况（基于`example3`）
+> setCount(6)
+> update( "*App$setCount$0", count += c )
+
+记录所有状态，包括事件被执行的次数
