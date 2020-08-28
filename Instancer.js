@@ -628,7 +628,14 @@ function makeInstance(name, { ...props } = {}) {
 			};
 		};
 
+		const manipulator = {
+			create() {},
+			update() {},
+			drop(solid_path) {},
+		};
+
 		return {
+			manipulator,
 			committer,
 			getRoot,
 			replaceWith(DOM) {
