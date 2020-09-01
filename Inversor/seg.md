@@ -37,7 +37,7 @@ c	rel_def = [ /0, /1/0 ]
 	result = /0
 ```
 
-> call: add $/1 call $/1 -> delete /1/1
+> call: add $/1 call $/1 -> add /1 call /1
 
 ```
 c	rel_def = [ /0, /1/0, /1/1 ]
