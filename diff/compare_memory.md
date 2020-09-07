@@ -34,5 +34,11 @@ future {
 		...
 	}
 }
+```
 
+```
+process a {
+	create( "Jackie", 176, 62kg, id = 2744335 )
+	User/2744335 joinToFightRoom( "SuperFightingRoom_f6xf30934qgzj3" )
+}
 ```

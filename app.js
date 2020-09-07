@@ -11,11 +11,6 @@ function define(cstor) {
 	}
 }
 
-function instancing(name, ...props) {
-	const cstor = CstorM.get(name) || (() => {});
-	return cstor(...props);
-}
-
 function loadDefintion(name) {
 	return new Promise((rv) => {
 		const head_dom = document.querySelector("head");
